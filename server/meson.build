@@ -7,6 +7,7 @@ sources = files(
     'decode.cc',
     'optimizer.cc',
     'rewriteserver.cc',
+    'DataProcessPass.cc',
 )
 
 config_data = configuration_data()

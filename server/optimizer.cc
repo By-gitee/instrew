@@ -1,9 +1,10 @@
-
+#include "DataProcessPass.h"
 #include "optimizer.h"
 
 #include "config.h"
 
 #include <llvm/Analysis/AliasAnalysis.h>
+#include <llvm/IR/Function.h>
 #include <llvm/IR/IRPrintingPasses.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
@@ -18,17 +19,111 @@
 // #include <llvm/Transforms/Scalar/DeadStoreElimination.h>
 #include <llvm/Transforms/Scalar/EarlyCSE.h>
 // #include <llvm/Transforms/Scalar/GVN.h>
+#include <llvm/Transforms/Scalar/IndVarSimplify.h>
+#include <llvm/Transforms/Scalar/LoopRotation.h>
 #include <llvm/Transforms/Scalar/MemCpyOptimizer.h>
 #include <llvm/Transforms/Scalar/MergedLoadStoreMotion.h>
 // #include <llvm/Transforms/Scalar/NewGVN.h>
 #include <llvm/Transforms/Scalar/Reassociate.h>
 #include <llvm/Transforms/Scalar/SCCP.h>
 #include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#include <llvm/Transforms/Scalar/TailRecursionElimination.h>
+#include <llvm/Transforms/Utils/Mem2Reg.h>
+#include <polly/CodeGen/IslAst.h>
+#include <polly/CodePreparation.h>
+#include <polly/DependenceInfo.h>
+#include <polly/ScopPass.h>
+
+void PollyOptimize(llvm::Function*);
+void ConmmonOptimize(llvm::Function*,const InstrewConfig&);
 
 
-void Optimizer::Optimize(llvm::Function* fn) {
+void PollyOptimize(llvm::Function* fn){
+  // Step1 : set manager
+  llvm::PassBuilder pb;
+  llvm::FunctionPassManager fpm;
+  llvm::ModulePassManager mpm;
+  polly::ScopPassManager spm;
+  llvm::LoopPassManager lpm;
+
+  llvm::AAManager am;
+  llvm::LoopAnalysisManager lam;
+  llvm::FunctionAnalysisManager fam;
+  llvm::CGSCCAnalysisManager cgam;
+  llvm::ModuleAnalysisManager mam;
+  polly::ScopAnalysisManager sam;
+
+  // Step2 : initialze the registerFunctionAnalyses
+  am=pb.buildDefaultAAPipeline();
+  pb.registerModuleAnalyses(mam);
+  pb.registerFunctionAnalyses(fam);
+  pb.registerLoopAnalyses(lam);
+  pb.registerCGSCCAnalyses(cgam);
+
+  fam.registerPass([&]{return polly::ScopAnalysis();}); 
+  fam.registerPass([&]{return polly::ScopInfoAnalysis();});
+  sam.registerPass([&]{return polly::DependenceAnalysis();});
+  sam.registerPass([&]{return polly::IslAstAnalysis();});
+
+  mam.registerPass([&]{return llvm::FunctionAnalysisManagerModuleProxy(fam);});
+  fam.registerPass([&]{return llvm::ModuleAnalysisManagerFunctionProxy(mam);});
+
+  fam.registerPass([&]{return polly::ScopAnalysisManagerFunctionProxy(sam);});
+  sam.registerPass([&]{return polly::FunctionAnalysisManagerScopProxy(fam);});
+
+//  fam.registerPass([&]{return llvm::PassInstrumentationAnalysis();});
+//  sam.registerPass([&]{return llvm::PassInstrumentationAnalysis();});
+
+  pb.crossRegisterProxies(lam,fam,cgam,mam);
+
+  // Step4 : set optimizer (module pass -> function pass -> scoppass)
+  fpm.addPass(llvm::PromotePass());
+  fpm.addPass(llvm::EarlyCSEPass(true));
+  fpm.addPass(llvm::InstCombinePass());
+  fpm.addPass(llvm::SimplifyCFGPass());
+  fpm.addPass(llvm::TailCallElimPass());
+  fpm.addPass(llvm::SimplifyCFGPass());
+  fpm.addPass(llvm::ReassociatePass());
+
+  {
+    llvm::LoopPassManager lpm{};
+    lpm.addPass(llvm::LoopRotatePass());
+    fpm.addPass(llvm::createFunctionToLoopPassAdaptor<llvm::LoopPassManager>(std::move(lpm),false,false));
+  }
+
+  fpm.addPass(llvm::InstCombinePass());
+
+  {
+    llvm::LoopPassManager lpm{};
+    lpm.addPass(llvm::IndVarSimplifyPass());
+    fpm.addPass(llvm::createFunctionToLoopPassAdaptor<llvm::LoopPassManager>(std::move(lpm),false,true));
+  }
+  //polly::PollyAllowFullFunction = true;
+  //mpm.addPass(llvm::LoopExtractorPass()); 
+
+  fpm.addPass(polly::CodePreparationPass());
+/**
+  spm.addPass(polly::SimplifyPass(0));
+  spm.addPass(polly::ForwardOpTreePass());
+  spm.addPass(polly::DeLICMPass());
+  spm.addPass(polly::SimplifyPass(1));
+  spm.addPass(polly::PruneUnprofitablePass());
+  spm.addPass(polly::IslScheduleOptimizerPass());
+  spm.addPass(polly::CodeGenerationPass());
+**/
+  fpm.addPass(polly::createFunctionToScopPassAdaptor(std::move(spm)));
+  fpm.addPass(pb.buildFunctionSimplificationPipeline(llvm::OptimizationLevel::O3,llvm::ThinOrFullLTOPhase::None));
+  fpm.run(*fn,fam);
+
+}
+
+
+
+
+void CommonOptimize(llvm::Function* fn,const InstrewConfig& instrew_cfg){
     llvm::PassBuilder pb;
     llvm::FunctionPassManager fpm{};
+    //polly::ScopPassManager spm{};
 
     llvm::LoopAnalysisManager lam{};
     llvm::FunctionAnalysisManager fam{};
@@ -45,7 +140,6 @@ void Optimizer::Optimize(llvm::Function* fn) {
     pb.crossRegisterProxies(lam, fam, cgam, mam);
 
     // fpm = pb.buildFunctionSimplificationPipeline(llvm::PassBuilder::O3, llvm::PassBuilder::ThinLTOPhase::None, false);
-
     // fpm.addPass(llvm::ADCEPass());
     fpm.addPass(llvm::DCEPass());
     fpm.addPass(llvm::EarlyCSEPass(instrew_cfg.extrainstcombine));
@@ -72,3 +166,16 @@ void Optimizer::Optimize(llvm::Function* fn) {
     // fpm.addPass(llvm::AAEvaluator());
     fpm.run(*fn, fam);
 }
+
+
+
+void Optimizer::Optimize(llvm::Function* fn) {
+     bool polly_on = false;
+     if(polly_on){
+        PollyOptimize(fn);
+     }
+     else{
+       CommonOptimize(fn,instrew_cfg);
+     }
+}
+
