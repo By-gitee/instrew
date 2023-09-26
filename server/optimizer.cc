@@ -8,7 +8,9 @@
 #include <llvm/IR/IRPrintingPasses.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Operator.h>
 #include <llvm/IR/PassManager.h>
+#include <llvm/Passes/OptimizationLevel.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h>
 #include <llvm/Transforms/InstCombine/InstCombine.h>
@@ -33,7 +35,8 @@
 #include <polly/CodePreparation.h>
 #include <polly/DependenceInfo.h>
 #include <polly/ScopPass.h>
-
+// mod polly test
+#include <polly/RegisterPasses.h>
 void PollyOptimize(llvm::Function*);
 void ConmmonOptimize(llvm::Function*,const InstrewConfig&);
 
@@ -170,7 +173,7 @@ void CommonOptimize(llvm::Function* fn,const InstrewConfig& instrew_cfg){
 
 
 void Optimizer::Optimize(llvm::Function* fn) {
-     bool polly_on = false;
+     bool polly_on = true;
      if(polly_on){
         PollyOptimize(fn);
      }
@@ -178,4 +181,17 @@ void Optimizer::Optimize(llvm::Function* fn) {
        CommonOptimize(fn,instrew_cfg);
      }
 }
+
+// polly optimize test
+void Optimizer::ModPollyOptimize(llvm::Module* mod){
+   //printf("passpipeline test\n");
+    llvm::PassBuilder pb;
+    llvm::ModuleAnalysisManager mam{};
+    llvm::ModulePassManager mpm{};
+    pb.registerModuleAnalyses(mam);
+//    polly::registerPollyPasses(pb);
+    polly::buildEarlyPollyPipeline(mpm,llvm::OptimizationLevel::O3);
+    //mpm.run(*mod,mam);
+}
+
 

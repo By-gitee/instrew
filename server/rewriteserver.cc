@@ -482,8 +482,12 @@ public:
         if (instrew_cfg.dumpir & 2)
             mod->print(llvm::errs(), nullptr);
 
+        // test polly pipline
+        optimizer.ModPollyOptimize(mod.get());
+
         auto time_llvm_opt_start = std::chrono::steady_clock::now();
-        optimizer.Optimize(fn);
+        
+        //optimizer.Optimize(fn);
         if (instrew_cfg.dumpir & 4)
             mod->print(llvm::errs(), nullptr);
 

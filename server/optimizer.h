@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdint>
+#include <llvm/IR/Module.h>
 
 
 struct InstrewConfig;
@@ -18,6 +19,7 @@ public:
     Optimizer(const InstrewConfig& instrew_cfg) : instrew_cfg(instrew_cfg) {}
 
     void Optimize(llvm::Function* fn);
+    void ModPollyOptimize(llvm::Module* mod);
 };
 
 #endif
