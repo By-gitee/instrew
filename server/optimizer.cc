@@ -78,7 +78,7 @@ void PollyOptimize(llvm::Function* fn){
 //  sam.registerPass([&]{return llvm::PassInstrumentationAnalysis();});
 
   pb.crossRegisterProxies(lam,fam,cgam,mam);
-
+  fpm.addPass(llvm::DataProcessPass());
   // Step4 : set optimizer (module pass -> function pass -> scoppass)
   fpm.addPass(llvm::PromotePass());
   fpm.addPass(llvm::EarlyCSEPass(true));
@@ -181,17 +181,4 @@ void Optimizer::Optimize(llvm::Function* fn) {
        CommonOptimize(fn,instrew_cfg);
      }
 }
-
-// polly optimize test
-void Optimizer::ModPollyOptimize(llvm::Module* mod){
-   //printf("passpipeline test\n");
-    llvm::PassBuilder pb;
-    llvm::ModuleAnalysisManager mam{};
-    llvm::ModulePassManager mpm{};
-    pb.registerModuleAnalyses(mam);
-//    polly::registerPollyPasses(pb);
-    polly::buildEarlyPollyPipeline(mpm,llvm::OptimizationLevel::O3);
-    //mpm.run(*mod,mam);
-}
-
 
