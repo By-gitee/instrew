@@ -8,6 +8,7 @@
 #include "optimizer.h"
 
 #include <instrew-api.h>
+#include <llvm/Support/raw_ostream.h>
 #include <rellume/rellume.h>
 
 #include <llvm/ADT/SmallVector.h>
@@ -162,6 +163,8 @@ private:
     CodeGenerator codegen;
 
     uint8_t config_hash[SHA_DIGEST_LENGTH];
+    //[By add]
+    uintptr_t preAddr = 0;
 
     std::chrono::steady_clock::duration dur_predecode{};
     std::chrono::steady_clock::duration dur_lifting{};
@@ -448,6 +451,14 @@ private:
 
 public:
     void Translate(uintptr_t addr) {
+        // [By add]
+        // printf("addr:%#X\n",addr);
+        bool isKernelFunc = false;
+        if(addr-preAddr == 0XCD4A2130 - 0XCC141D44){
+          isKernelFunc = true;
+        }
+        preAddr = addr;
+
         auto time_predecode_start = std::chrono::steady_clock::now();
         std::vector<DecodedInst> insts;
 
@@ -475,13 +486,18 @@ public:
         }
         if (instrew_cfg.dumpir & 1)
             mod->print(llvm::errs(), nullptr);
+        //if(isKernelFunc){
+        //  mod->print(llvm::errs(),nullptr);
+        //}
 
         auto time_instrument_start = std::chrono::steady_clock::now();
         fn = tool.Instrument(fn);
         fn = ChangeCallConv(fn, instrew_cc);
         if (instrew_cfg.dumpir & 2)
             mod->print(llvm::errs(), nullptr);
-
+        if(isKernelFunc){
+          mod->print(llvm::errs(),nullptr);
+        }
 
         auto time_llvm_opt_start = std::chrono::steady_clock::now();
         
