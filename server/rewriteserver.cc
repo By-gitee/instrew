@@ -454,7 +454,7 @@ public:
         // [By add]
         // printf("addr:%#X\n",addr);
         bool isKernelFunc = false;
-        if(addr-preAddr == 0XCD4A2130 - 0XCC141D44){
+        if(addr-preAddr == 0xBA1D3130 - 0xB8E71D44){
           isKernelFunc = true;
         }
         preAddr = addr;
