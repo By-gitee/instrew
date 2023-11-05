@@ -27,6 +27,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Scalar/DCE.h>
 #include <llvm/Transforms/Scalar/LoopPassManager.h>
+#include <llvm/Transforms/Utils/Mem2Reg.h>
 #include <memory>
 #include <queue>
 #include <system_error>
@@ -77,6 +78,7 @@ int main(int argc, char **argv){
   
   // Add Pass
   fpm.addPass(llvm::DCEPass());
+  fpm.addPass(llvm::PromotePass());
 
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
   mpm.run(*Mod,mam);
