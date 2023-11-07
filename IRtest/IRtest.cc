@@ -52,8 +52,8 @@ int main(int argc, char **argv){
   llvm::InitLLVM X(argc ,argv);
   llvm::SMDiagnostic Err;
   std::unique_ptr<llvm::LLVMContext> Ctx = std::make_unique<llvm::LLVMContext>();
-  std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./afterInstru.ll",Err,*Ctx);
-
+  //std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./afterInstru.ll",Err,*Ctx);
+  std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./test.ll",Err,*Ctx);
   /** 
    // Print PHI DDG to analyze
   std::fstream file;
