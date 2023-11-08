@@ -213,7 +213,8 @@ void GEPpromoteMem2Reg::run(){
   for(unsigned GEPNum = 0; GEPNum != GEPs.size(); ++GEPNum){
     GetElementPtrInst * GEP = GEPs[GEPNum];
 
-    //TODO
+    //TODO:首先完成第一部分，即简单情况下的提升过程
+    removeIntrinsicUsers(GEP);
 
   }
 

@@ -26,8 +26,10 @@
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Scalar/DCE.h>
+#include <llvm/Transforms/Scalar/EarlyCSE.h>
 #include <llvm/Transforms/Scalar/LoopPassManager.h>
 #include <llvm/Transforms/Utils/Mem2Reg.h>
+#include <llvm/Transforms/Scalar/GVN.h>
 #include <memory>
 #include <queue>
 #include <system_error>
@@ -54,10 +56,10 @@ int main(int argc, char **argv){
   std::unique_ptr<llvm::LLVMContext> Ctx = std::make_unique<llvm::LLVMContext>();
   //std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./afterInstru.ll",Err,*Ctx);
   std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./test.ll",Err,*Ctx);
-  /** 
-   // Print PHI DDG to analyze
+   /**
+  // Print PHI DDG to analyze
   std::fstream file;
-  file.open("PHIdfg.dot",std::ios::out);
+  file.open("DCEPHIdfg.dot",std::ios::out);
   PrintModulePHIDFG(&(*Mod),file);
   file.close();
   **/
@@ -78,6 +80,8 @@ int main(int argc, char **argv){
   
   // Add Pass
   fpm.addPass(llvm::DCEPass());
+  fpm.addPass(llvm::PromotePass());
+  //fpm.addPass(llvm::EarlyCSEPass(true));
   //实现关于GEP的fpm.addPass(llvm::PromotePass());
 
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
@@ -169,7 +173,7 @@ void PrintFunctionPHIDFG(llvm::Function* Func, std::fstream& file){
   llvm::inst_iterator I = llvm::inst_begin(Func);
   llvm::inst_iterator E = llvm::inst_end(Func);
   while(I!=E){
-    if(I->getOpcode() == llvm::Instruction::PHI && get_name(&(*I))=="%.lcssa6"){
+    if(I->getOpcode() == llvm::Instruction::PHI && get_name(&(*I))=="%39"){
       llvm::Instruction* Inst = &(*I);
       PrintInstDFG(Inst, file);
     }
