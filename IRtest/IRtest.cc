@@ -54,8 +54,8 @@ int main(int argc, char **argv){
   llvm::InitLLVM X(argc ,argv);
   llvm::SMDiagnostic Err;
   std::unique_ptr<llvm::LLVMContext> Ctx = std::make_unique<llvm::LLVMContext>();
-  //std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./afterInstru.ll",Err,*Ctx);
-  std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./test.ll",Err,*Ctx);
+  std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./afterInstru.ll",Err,*Ctx);
+  //std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./test.ll",Err,*Ctx);
    /**
   // Print PHI DDG to analyze
   std::fstream file;
@@ -80,7 +80,8 @@ int main(int argc, char **argv){
   
   // Add Pass
   fpm.addPass(llvm::DCEPass());
-  fpm.addPass(llvm::PromotePass());
+  //fpm.addPass(llvm::PromotePass());
+  fpm.addPass(llvm::GVNPass());
   //fpm.addPass(llvm::EarlyCSEPass(true));
   //实现关于GEP的fpm.addPass(llvm::PromotePass());
 
