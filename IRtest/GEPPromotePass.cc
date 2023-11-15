@@ -57,7 +57,7 @@ struct GEPInfo{
       }
       // 不过实际上GEP指令的user也可能是一个cast相关的，好消息是cast不影响
       // 坏消息是实际上GEP会通过使用PHI阶段传来传去
-      // 能够实现PHI节点之间传递的识别吗
+      // 能够实现PHI节点之间传递的识别吗->已实现
 
       if (OnlyUsedInOneBlock) {
         if (!OnlyBlock)
@@ -186,6 +186,10 @@ private:
 };
 }
 
+void removeIntrinsticUsers(GetElementPtrInst* GEP){
+  
+}
+
 
 bool isGEPPromotable(const GetElementPtrInst* GEP);
 bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT,AssumptionCache &AC);//还挺难的，需要进一步看代码实现过程
@@ -214,7 +218,22 @@ void GEPpromoteMem2Reg::run(){
     GetElementPtrInst * GEP = GEPs[GEPNum];
 
     //TODO:首先完成第一部分，即简单情况下的提升过程
+    //原函数中调用这一函数是为了删除Alloc中非load和非store指令
+    //因为真正和内存操作相关的是load和store
+    //通过暂且的分析来看，这一优化和GEP无关
     //removeIntrinsicUsers(GEP);
+
+    //判断use_empty没有必要
+    //因为在目前的优化下GEP仅剩第一次指令
+    //不可删除，要用来做函数参数
+    
+    Info.AnalyzeGEP(GEP);
+
+    if(Info.DefiningBlocks.size() == 1){
+      if(rewriteSingleStoreGEP)(GEP,Info,LBI,SQ.DL,DT,AC){
+        //TODO
+      }
+    }
 
   }
 
