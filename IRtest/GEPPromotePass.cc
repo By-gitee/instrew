@@ -1,4 +1,5 @@
 #include "GEPPromotePass.h"
+#include <cassert>
 #include <llvm/ADT/ArrayRef.h>
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/DenseMapInfo.h>
@@ -16,8 +17,12 @@
 #include <llvm/Analysis/ValueTracking.h>
 #include <llvm/Analysis/InstructionSimplify.h>
 #include <llvm/Analysis//IteratedDominanceFrontier.h>
+#include <llvm/Support/raw_ostream.h>
 
 using namespace llvm;
+
+static int NumSingelStoreGEP = 0;//NumSingleStore for GEP
+
 namespace{
 
 struct GEPInfo{
@@ -161,7 +166,7 @@ public:
   void run();
 
 private:
-  void RemoveFromAllocasList(unsigned &GEPIdx) {
+  void RemoveFromGEPsList(unsigned &GEPIdx) {
     GEPs[GEPIdx] = GEPs.back();
     GEPs.pop_back();
     --GEPIdx;
@@ -186,14 +191,90 @@ private:
 };
 }
 
-void removeIntrinsticUsers(GetElementPtrInst* GEP){
-  
-}
 
 
 bool isGEPPromotable(const GetElementPtrInst* GEP);
 bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT,AssumptionCache &AC);//还挺难的，需要进一步看代码实现过程
 void GEPpromoteMemToReg(ArrayRef<GetElementPtrInst*> GEPs,DominatorTree &DT,AssumptionCache *AC);
+bool rewriteSingleStoreGEP(GetElementPtrInst *GEP, GEPInfo &Info,
+                                     LargeBlockInfo &LBI, const DataLayout &DL,
+                                     DominatorTree &DT, AssumptionCache *AC);
+void addAssumeNonNull(AssumptionCache *AC, LoadInst *LI);
+
+
+
+void addAssumeNonNull(AssumptionCache *AC, LoadInst *LI){
+    Function *AssumeIntrinsic =
+          Intrinsic::getDeclaration(LI->getModule(), Intrinsic::assume);
+    ICmpInst *LoadNotNull = new ICmpInst(ICmpInst::ICMP_NE, LI,
+                                       Constant::getNullValue(LI->getType()));
+    LoadNotNull->insertAfter(LI);
+    CallInst *CI = CallInst::Create(AssumeIntrinsic, {LoadNotNull});
+    CI->insertAfter(LoadNotNull);
+    AC->registerAssumption(cast<AssumeInst>(CI));
+}
+
+bool rewriteSingleStoreGEP(GetElementPtrInst *GEP, GEPInfo &Info,
+                                     LargeBlockInfo &LBI, const DataLayout &DL,
+                                     DominatorTree &DT, AssumptionCache *AC) {
+ StoreInst *OnlyStore = Info.OnlyStore;
+  bool StoringGlobalVal = !isa<Instruction>(OnlyStore->getOperand(0));
+  BasicBlock *StoreBB = OnlyStore->getParent();
+  int StoreIndex = -1;
+
+  Info.UsingBlocks.clear();
+
+  for (User *U : make_early_inc_range(GEP->users())) {
+    Instruction *UserInst = cast<Instruction>(U);
+    if (UserInst == OnlyStore)
+      continue;
+    LoadInst *LI = cast<LoadInst>(UserInst);
+
+    if (!StoringGlobalVal) { 
+      if (LI->getParent() == StoreBB) {
+        if (StoreIndex == -1)
+          StoreIndex = LBI.getInstructionIndex(OnlyStore);
+
+        if (unsigned(StoreIndex) > LBI.getInstructionIndex(LI)) {
+          Info.UsingBlocks.push_back(StoreBB);
+          continue;
+        }
+      } else if (!DT.dominates(StoreBB, LI->getParent())) {
+        Info.UsingBlocks.push_back(LI->getParent());
+        continue;
+      }
+    }
+
+    Value *ReplVal = OnlyStore->getOperand(0);
+    
+    if (ReplVal == LI)
+      ReplVal = PoisonValue::get(LI->getType());
+
+    // If the load was marked as nonnull we don't want to lose
+    // that information when we erase this Load. So we preserve
+    // it with an assume.
+    if (AC && LI->getMetadata(LLVMContext::MD_nonnull) &&
+        !isKnownNonZero(ReplVal, DL, 0, AC, LI, &DT))
+      addAssumeNonNull(AC, LI);
+
+    // 这一步是必要的
+    LI->replaceAllUsesWith(ReplVal);
+    // load也应当被删除
+    LI->eraseFromParent();
+    LBI.deleteValue(LI);
+  }
+
+  // Finally, after the scan, check to see if the store is all that is left.
+  if (!Info.UsingBlocks.empty())
+    return false; // If not, we'll have to fall back for the remainder.
+  
+  // store以及GEP指令暂时不能够删除，留作后续分析
+  //Info.OnlyStore->eraseFromParent();
+  //LBI.deleteValue(Info.OnlyStore);
+
+  //GEP->eraseFromParent();
+  return true;
+}
 
 PreservedAnalyses GEPPromotePass::run(Function &F,FunctionAnalysisManager &AM){
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
@@ -209,7 +290,7 @@ PreservedAnalyses GEPPromotePass::run(Function &F,FunctionAnalysisManager &AM){
 
 void GEPpromoteMem2Reg::run(){
   Function &F = *DT.getRoot()->getParent();
-
+  
   GEPInfo Info;
   LargeBlockInfo LBI;
   ForwardIDFCalculator IDF(DT);
@@ -230,8 +311,10 @@ void GEPpromoteMem2Reg::run(){
     Info.AnalyzeGEP(GEP);
 
     if(Info.DefiningBlocks.size() == 1){
-      if(rewriteSingleStoreGEP)(GEP,Info,LBI,SQ.DL,DT,AC){
-        //TODO
+      if(rewriteSingleStoreGEP(GEP,Info,LBI,SQ.DL,DT,AC)){
+        RemoveFromGEPsList(GEPNum);
+        ++NumSingelStoreGEP;
+        continue;
       }
     }
 
@@ -239,13 +322,10 @@ void GEPpromoteMem2Reg::run(){
 
 }
 
-
-
 void GEPpromoteMemToReg(ArrayRef<GetElementPtrInst*> GEPs, DominatorTree &DT, AssumptionCache *AC){
   if(GEPs.empty())  return;
   GEPpromoteMem2Reg(GEPs,DT,AC).run();
 }
-
 
 bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC){
   std::vector<GetElementPtrInst*> GEPs;
@@ -258,20 +338,27 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
     for(BasicBlock::iterator I=BB.begin(),E=--BB.end();I!=E;++I){
       if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(I)){ // Use GEP
                                                                    // But there is a question "Is GEP's situation the same as alloc?"
-        if(isGEPPromotable(GEP)) GEPs.push_back(GEP);
+        if(isGEPPromotable(GEP)){ 
+          llvm::outs()<<"push:"<<*GEP<<"\n";
+          GEPs.push_back(GEP);
       }
     }
-
+    }
     if(GEPs.empty())  break;
 
     GEPpromoteMemToReg(GEPs,DT,&AC);
     // 忽略NumPromoted
     Changed = true;
   }
+  return Changed;
 }
 
 bool isGEPPromotable(const GetElementPtrInst *GEP){  
-  for(const User *U : GEP->users()){
+  //没有把所有的都push进去
+  //这并不正确
+  //需要debug
+
+  for(const User *U : GEP->users()){    
     if (const LoadInst *LI = dyn_cast<LoadInst>(U)) {
       if (LI->isVolatile() || LI->getType() != GEP->getResultElementType())
         return false;
@@ -298,8 +385,8 @@ bool isGEPPromotable(const GetElementPtrInst *GEP){
     } else {
       return false;
     }
-
   }
+  return true;
 }
 
 

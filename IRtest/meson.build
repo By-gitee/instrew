@@ -49,6 +49,7 @@ llvm_libs = run_command(llvm_config, '--libs').stdout().strip().split()
 executable(
   'IRtest',
   'IRtest.cc',
+  'GEPPromotePass.cc',
   dependencies:[libllvm],
   include_directories: '/home/zby/dbt/env/include/polly',
   link_args: llvm_libs)

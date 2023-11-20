@@ -1,3 +1,4 @@
+#include "GEPPromotePass.h"
 #include <cstdio>
 #include <fstream>
 #include <ios>
@@ -82,8 +83,9 @@ int main(int argc, char **argv){
   fpm.addPass(llvm::DCEPass());
   //fpm.addPass(llvm::PromotePass());
   fpm.addPass(llvm::GVNPass());
-  //fpm.addPass(llvm::EarlyCSEPass(true));
+  fpm.addPass(llvm::EarlyCSEPass(true));
   //实现关于GEP的fpm.addPass(llvm::PromotePass());
+  fpm.addPass(llvm::GEPPromotePass());
 
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
   mpm.run(*Mod,mam);
