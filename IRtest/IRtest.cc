@@ -14,6 +14,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/Instruction.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/PassManager.h>
@@ -41,6 +42,7 @@
 /** Analysis tools **/
 std::string get_name(llvm::Value* value);
 
+void testInst(llvm::Module *Mod);
 void PrintInstDFG(llvm::Instruction* Inst, std::fstream& file);
 void PrintFunctionPHIDFG(llvm::Function* Func, std::fstream& file);
 void PrintModulePHIDFG(llvm::Module* Mod, std::fstream& file); 
@@ -57,7 +59,8 @@ int main(int argc, char **argv){
   std::unique_ptr<llvm::LLVMContext> Ctx = std::make_unique<llvm::LLVMContext>();
   std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./afterInstru.ll",Err,*Ctx);
   //std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./test.ll",Err,*Ctx);
-   /**
+   
+  /**
   // Print PHI DDG to analyze
   std::fstream file;
   file.open("DCEPHIdfg.dot",std::ios::out);
@@ -81,10 +84,8 @@ int main(int argc, char **argv){
   
   // Add Pass
   fpm.addPass(llvm::DCEPass());
-  //fpm.addPass(llvm::PromotePass());
   fpm.addPass(llvm::GVNPass());
   fpm.addPass(llvm::EarlyCSEPass(true));
-  //实现关于GEP的fpm.addPass(llvm::PromotePass());
   fpm.addPass(llvm::GEPPromotePass());
 
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
@@ -92,12 +93,35 @@ int main(int argc, char **argv){
 
   // Print the Module
   Mod->print(llvm::outs(),nullptr);
+  //testInst(&(*Mod));
   Mod.reset();
 
   return 0;
 }
 
-
+void testInst(llvm::Module * Mod){
+  for(auto &F:Mod->getFunctionList()){
+    llvm::inst_iterator I = llvm::inst_begin(F);
+    llvm::inst_iterator E = llvm::inst_end(F);
+    while(I!=E){
+      if(llvm::GetElementPtrInst* GEP = llvm::dyn_cast<llvm::GetElementPtrInst>(&(*I))){
+         llvm::outs()<<*GEP<<"\n";
+         llvm::outs()<<*GEP->getResultElementType()<<"\n";
+         llvm::outs()<<*GEP->getSourceElementType()<<"\n";
+      }
+      else if(llvm::StoreInst* SI = llvm::dyn_cast<llvm::StoreInst>(&(*I))){
+        llvm::outs()<<*SI<<"\n";
+        llvm::outs()<<*SI->getValueOperand()<<"\n";
+        llvm::outs()<<*SI->getValueOperand()->getType()<<"\n";
+      }
+      else if(llvm::LoadInst* LI = llvm::dyn_cast<llvm::LoadInst>(&(*I))){
+        llvm::outs()<<*LI<<"\n";
+        llvm::outs()<<*LI->getType()<<"\n";
+      }
+     I++;
+    }
+  }
+}
 // Get the name of the Value
 std::string get_name(llvm::Value* value){
   std::string name;

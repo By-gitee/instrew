@@ -265,9 +265,9 @@ bool rewriteSingleStoreGEP(GetElementPtrInst *GEP, GEPInfo &Info,
   }
 
   // Finally, after the scan, check to see if the store is all that is left.
-  if (!Info.UsingBlocks.empty())
+  if (!Info.UsingBlocks.empty()){
     return false; // If not, we'll have to fall back for the remainder.
-  
+  }
   // store以及GEP指令暂时不能够删除，留作后续分析
   //Info.OnlyStore->eraseFromParent();
   //LBI.deleteValue(Info.OnlyStore);
@@ -345,9 +345,11 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
     }
     }
     if(GEPs.empty())  break;
-
+    llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
     GEPpromoteMemToReg(GEPs,DT,&AC);
-    // 忽略NumPromoted
+    llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
+    break;//临时加的，后面记得删掉
+   // 忽略NumPromoted
     Changed = true;
   }
   return Changed;
@@ -360,11 +362,10 @@ bool isGEPPromotable(const GetElementPtrInst *GEP){
 
   for(const User *U : GEP->users()){    
     if (const LoadInst *LI = dyn_cast<LoadInst>(U)) {
-      if (LI->isVolatile() || LI->getType() != GEP->getResultElementType())
+      if (LI->isVolatile())
         return false;
     } else if (const StoreInst *SI = dyn_cast<StoreInst>(U)) {
-      if (SI->getValueOperand() == GEP ||
-          SI->getValueOperand()->getType() != GEP->getResultElementType())
+      if (SI->getValueOperand() == GEP)
         return false; 
       if (SI->isVolatile())
         return false;
