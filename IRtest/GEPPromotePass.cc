@@ -22,7 +22,7 @@
 using namespace llvm;
 
 static int NumSingelStoreGEP = 0;//NumSingleStore for GEP
-
+int NumPromoteGEP = 0;
 namespace{
 
 struct GEPInfo{
@@ -92,7 +92,7 @@ public:
 
   static bool isInterestingInstruction(const Instruction *I) {
     return (isa<LoadInst>(I) && isa<GetElementPtrInst>(I->getOperand(0))) ||
-           (isa<StoreInst>(I) && isa<GetElementPtrInst>(I->getOperand(1)));
+      (isa<StoreInst>(I) && isa<GetElementPtrInst>(I->getOperand(1)));
   }
 
   /// Get or calculate the index of the specified instruction.
@@ -129,7 +129,7 @@ struct RenamePassData {
   using LocationVector = std::vector<DebugLoc>;
 
   RenamePassData(BasicBlock *B, BasicBlock *P, ValVector V, LocationVector L)
-      : BB(B), Pred(P), Values(std::move(V)), Locations(std::move(L)) {}
+    : BB(B), Pred(P), Values(std::move(V)), Locations(std::move(L)) {}
 
   BasicBlock *BB;
   BasicBlock *Pred;
@@ -194,30 +194,30 @@ private:
 
 
 bool isGEPPromotable(const GetElementPtrInst* GEP);
-bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT,AssumptionCache &AC);//还挺难的，需要进一步看代码实现过程
+static bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT,AssumptionCache &AC);//还挺难的，需要进一步看代码实现过程
 void GEPpromoteMemToReg(ArrayRef<GetElementPtrInst*> GEPs,DominatorTree &DT,AssumptionCache *AC);
 bool rewriteSingleStoreGEP(GetElementPtrInst *GEP, GEPInfo &Info,
-                                     LargeBlockInfo &LBI, const DataLayout &DL,
-                                     DominatorTree &DT, AssumptionCache *AC);
+                           LargeBlockInfo &LBI, const DataLayout &DL,
+                           DominatorTree &DT, AssumptionCache *AC);
 void addAssumeNonNull(AssumptionCache *AC, LoadInst *LI);
 
 
 
 void addAssumeNonNull(AssumptionCache *AC, LoadInst *LI){
-    Function *AssumeIntrinsic =
-          Intrinsic::getDeclaration(LI->getModule(), Intrinsic::assume);
-    ICmpInst *LoadNotNull = new ICmpInst(ICmpInst::ICMP_NE, LI,
+  Function *AssumeIntrinsic =
+    Intrinsic::getDeclaration(LI->getModule(), Intrinsic::assume);
+  ICmpInst *LoadNotNull = new ICmpInst(ICmpInst::ICMP_NE, LI,
                                        Constant::getNullValue(LI->getType()));
-    LoadNotNull->insertAfter(LI);
-    CallInst *CI = CallInst::Create(AssumeIntrinsic, {LoadNotNull});
-    CI->insertAfter(LoadNotNull);
-    AC->registerAssumption(cast<AssumeInst>(CI));
+  LoadNotNull->insertAfter(LI);
+  CallInst *CI = CallInst::Create(AssumeIntrinsic, {LoadNotNull});
+  CI->insertAfter(LoadNotNull);
+  AC->registerAssumption(cast<AssumeInst>(CI));
 }
 
 bool rewriteSingleStoreGEP(GetElementPtrInst *GEP, GEPInfo &Info,
-                                     LargeBlockInfo &LBI, const DataLayout &DL,
-                                     DominatorTree &DT, AssumptionCache *AC) {
- StoreInst *OnlyStore = Info.OnlyStore;
+                           LargeBlockInfo &LBI, const DataLayout &DL,
+                           DominatorTree &DT, AssumptionCache *AC) {
+  StoreInst *OnlyStore = Info.OnlyStore;
   bool StoringGlobalVal = !isa<Instruction>(OnlyStore->getOperand(0));
   BasicBlock *StoreBB = OnlyStore->getParent();
   int StoreIndex = -1;
@@ -246,7 +246,7 @@ bool rewriteSingleStoreGEP(GetElementPtrInst *GEP, GEPInfo &Info,
     }
 
     Value *ReplVal = OnlyStore->getOperand(0);
-    
+
     if (ReplVal == LI)
       ReplVal = PoisonValue::get(LI->getType());
 
@@ -290,7 +290,7 @@ PreservedAnalyses GEPPromotePass::run(Function &F,FunctionAnalysisManager &AM){
 
 void GEPpromoteMem2Reg::run(){
   Function &F = *DT.getRoot()->getParent();
-  
+
   GEPInfo Info;
   LargeBlockInfo LBI;
   ForwardIDFCalculator IDF(DT);
@@ -307,16 +307,26 @@ void GEPpromoteMem2Reg::run(){
     //判断use_empty没有必要
     //因为在目前的优化下GEP仅剩第一次指令
     //不可删除，要用来做函数参数
-    
+
     Info.AnalyzeGEP(GEP);
 
     if(Info.DefiningBlocks.size() == 1){
+      llvm::outs()<<*GEP<<"\n";
       if(rewriteSingleStoreGEP(GEP,Info,LBI,SQ.DL,DT,AC)){
         RemoveFromGEPsList(GEPNum);
+        ++NumPromoteGEP;
         ++NumSingelStoreGEP;
         continue;
       }
     }
+    else if(Info.DefiningBlocks.size()==0){
+      //并没有store操作，因此不应当处理
+      //但同时为了保证正确性，应当对promote数量进行处理
+      ++NumPromoteGEP;
+    }
+    llvm::outs()<<*GEP<<"\n";
+    llvm::outs()<<Info.DefiningBlocks.size()<<"\n";
+    llvm::outs()<<NumPromoteGEP<<"\n";
 
   }
 
@@ -327,39 +337,47 @@ void GEPpromoteMemToReg(ArrayRef<GetElementPtrInst*> GEPs, DominatorTree &DT, As
   GEPpromoteMem2Reg(GEPs,DT,AC).run();
 }
 
-bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC){
+static bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC){
   std::vector<GetElementPtrInst*> GEPs;
-  BasicBlock &BB = F.getEntryBlock();
   bool Changed = false;
+  // alloc只在入口块中含有，但是GEP并不是，所以需要遍历所有的基本快
+  for(auto& BB:F){ 
+    while(true){
+      GEPs.clear();
+      NumPromoteGEP = 0;
 
-  while(true){
-    GEPs.clear();
-
-    for(BasicBlock::iterator I=BB.begin(),E=--BB.end();I!=E;++I){
-      if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(I)){ // Use GEP
-                                                                   // But there is a question "Is GEP's situation the same as alloc?"
-        if(isGEPPromotable(GEP)){ 
-          llvm::outs()<<"push:"<<*GEP<<"\n";
-          GEPs.push_back(GEP);
+      for(BasicBlock::iterator I=BB.begin(),E=--BB.end();I!=E;++I){
+        if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(I)){ // Use GEP
+                                                                     // But there is a question "Is GEP's situation the same as alloc?"
+          if(isGEPPromotable(GEP)){ 
+            llvm::outs()<<"push:"<<*GEP<<"\n";
+            GEPs.push_back(GEP);
+          }
+        }
       }
+      if(NumPromoteGEP + 1 == GEPs.size())  {
+        //目前仅仅实现了SingleStore情况
+        //所以 + 1临时用于debug
+        //后期需要删除
+        llvm::outs()<<"can brea\n";
+        break;
+      }
+      llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
+      GEPpromoteMemToReg(GEPs,DT,&AC);
+      break;//临时加的，后面记得删掉
+            //忽略NumPromoted
+      Changed = true;
     }
-    }
-    if(GEPs.empty())  break;
-    llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
-    GEPpromoteMemToReg(GEPs,DT,&AC);
-    llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
     break;//临时加的，后面记得删掉
-   // 忽略NumPromoted
-    Changed = true;
   }
   return Changed;
 }
 
 bool isGEPPromotable(const GetElementPtrInst *GEP){  
-  //没有把所有的都push进去
-  //这并不正确
-  //需要debug
-
+  // 这里由于我们限制了GEP的使用场景
+  // （仅仅适用于模拟堆栈操作的部分）
+  // 所以这里对于load和store类型的判断暂且删除
+  // (GEP从栈中拿出来都是i8，存的时候都用i32，但是不影响代码的正确性)
   for(const User *U : GEP->users()){    
     if (const LoadInst *LI = dyn_cast<LoadInst>(U)) {
       if (LI->isVolatile())

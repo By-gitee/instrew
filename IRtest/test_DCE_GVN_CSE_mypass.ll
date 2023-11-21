@@ -10,7 +10,19 @@ push:  %25 = getelementptr i8, ptr %22, i64 -24
 push:  %26 = getelementptr i8, ptr %22, i64 -28
 push:  %27 = getelementptr i8, ptr %22, i64 -8
 GEPs size:11
-GEPs size:11
+  %15 = getelementptr i8, ptr addrspace(1) %1, i64 136
+  %27 = getelementptr i8, ptr %22, i64 -8
+2
+1
+  %16 = getelementptr i8, ptr addrspace(1) %1, i64 137
+  %26 = getelementptr i8, ptr %22, i64 -28
+  %25 = getelementptr i8, ptr %22, i64 -24
+  %24 = getelementptr i8, ptr %22, i64 -20
+  %23 = getelementptr i8, ptr %22, i64 -4
+  %20 = getelementptr i8, ptr addrspace(1) %1, i64 141
+  %19 = getelementptr i8, ptr addrspace(1) %1, i64 140
+  %18 = getelementptr i8, ptr addrspace(1) %1, i64 139
+  %17 = getelementptr i8, ptr addrspace(1) %1, i64 138
 ; ModuleID = './afterInstru.ll'
 source_filename = "mod"
 
