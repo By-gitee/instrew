@@ -10,6 +10,7 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Dominators.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IntrinsicInst.h>
 #include <llvm/IR/PassManager.h>
@@ -200,6 +201,83 @@ bool rewriteSingleStoreGEP(GetElementPtrInst *GEP, GEPInfo &Info,
                            LargeBlockInfo &LBI, const DataLayout &DL,
                            DominatorTree &DT, AssumptionCache *AC);
 void addAssumeNonNull(AssumptionCache *AC, LoadInst *LI);
+bool promoteSingleBlockAllocaGEP(GetElementPtrInst *GEP, const GEPInfo &Info,
+                                     LargeBlockInfo &LBI,
+                                     const DataLayout &DL,
+                                     DominatorTree &DT,
+                                     AssumptionCache *AC);
+
+bool promoteSingleBlockAllocaGEP(GetElementPtrInst *GEP, const GEPInfo &Info,
+                                     LargeBlockInfo &LBI,
+                                     const DataLayout &DL,
+                                     DominatorTree &DT,
+                                     AssumptionCache *AC){
+  using StoresByIndexTy = SmallVector<std::pair<unsigned, StoreInst *>, 64>;
+  StoresByIndexTy StoresByIndex;
+
+  for (User *U : GEP->users())
+    if (StoreInst *SI = dyn_cast<StoreInst>(U))
+      StoresByIndex.push_back(std::make_pair(LBI.getInstructionIndex(SI), SI));
+
+  // Sort the stores by their index, making it efficient to do a lookup with a
+  // binary search.
+  llvm::sort(StoresByIndex, less_first());
+
+  // Walk all of the loads from this alloca, replacing them with the nearest
+  // store above them, if any.
+  for (User *U : make_early_inc_range(GEP->users())) {
+    LoadInst *LI = dyn_cast<LoadInst>(U);
+    if (!LI)
+      continue;
+
+    unsigned LoadIdx = LBI.getInstructionIndex(LI);
+
+    // Find the nearest store that has a lower index than this load.
+    StoresByIndexTy::iterator I = llvm::lower_bound(
+        StoresByIndex,
+        std::make_pair(LoadIdx, static_cast<StoreInst *>(nullptr)),
+        less_first());
+    Value *ReplVal;
+    if (I == StoresByIndex.begin()) {
+      if (StoresByIndex.empty())
+        // If there are no stores, the load takes the undef value.
+        ReplVal = UndefValue::get(LI->getType());
+      else
+        // There is no store before this load, bail out (load may be affected
+        // by the following stores - see main comment).
+        return false;
+    } else {
+      // Otherwise, there was a store before this load, the load takes its
+      // value.
+      ReplVal = std::prev(I)->second->getOperand(0);
+    }
+
+    // Note, if the load was marked as nonnull we don't want to lose that
+    // information when we erase it. So we preserve it with an assume.
+    if (AC && LI->getMetadata(LLVMContext::MD_nonnull) &&
+        !isKnownNonZero(ReplVal, DL, 0, AC, LI, &DT))
+      addAssumeNonNull(AC, LI);
+
+    // If the replacement value is the load, this must occur in unreachable
+    // code.
+    if (ReplVal == LI)
+      ReplVal = PoisonValue::get(LI->getType());
+
+    LI->replaceAllUsesWith(ReplVal);
+    LI->eraseFromParent();
+    LBI.deleteValue(LI);
+  }
+
+  // Remove the (now dead) stores and alloca.alloc（GEP）不删除
+  while (!GEP->use_empty()) {
+    StoreInst *SI = cast<StoreInst>(GEP->user_back());
+    SI->eraseFromParent();
+    LBI.deleteValue(SI);
+  }
+  //暂时不可以删除GEP
+
+  return true;
+}
 
 
 
@@ -311,7 +389,6 @@ void GEPpromoteMem2Reg::run(){
     Info.AnalyzeGEP(GEP);
 
     if(Info.DefiningBlocks.size() == 1){
-      llvm::outs()<<*GEP<<"\n";
       if(rewriteSingleStoreGEP(GEP,Info,LBI,SQ.DL,DT,AC)){
         RemoveFromGEPsList(GEPNum);
         ++NumPromoteGEP;
@@ -319,17 +396,187 @@ void GEPpromoteMem2Reg::run(){
         continue;
       }
     }
-    else if(Info.DefiningBlocks.size()==0){
-      //并没有store操作，因此不应当处理
-      //但同时为了保证正确性，应当对promote数量进行处理
+/////////////Begin from here
+    if(Info.OnlyUsedInOneBlock &&
+       promoteSingleBlockAllocaGEP(GEP,Info,LBI,SQ.DL,DT,AC)){
+      RemoveFromGEPsList(GEPNum);
       ++NumPromoteGEP;
+      continue;
     }
-    llvm::outs()<<*GEP<<"\n";
-    llvm::outs()<<Info.DefiningBlocks.size()<<"\n";
-    llvm::outs()<<NumPromoteGEP<<"\n";
 
+    if(BBNumbers.empty()){
+      unsigned ID = 0;
+      for(auto& BB:F){
+        BBNumbers[&BB] = ID++;
+      }
+    }
+//TODO:step1
+/**
+    // Keep the reverse mapping of the 'Allocas' array for the rename pass.
+    GEPLookup[GEPs[GEPNum]] = GEPNum;
+
+    // Unique the set of defining blocks for efficient lookup.
+    SmallPtrSet<BasicBlock *, 32> DefBlocks(Info.DefiningBlocks.begin(),
+                                            Info.DefiningBlocks.end());
+
+    // Determine which blocks the value is live in.  These are blocks which lead
+    // to uses.
+    SmallPtrSet<BasicBlock *, 32> LiveInBlocks;
+    ComputeLiveInBlocks(GEP, Info, DefBlocks, LiveInBlocks);
+
+    // At this point, we're committed to promoting the alloca using IDF's, and
+    // the standard SSA construction algorithm.  Determine which blocks need phi
+    // nodes and see if we can optimize out some work by avoiding insertion of
+    // dead phi nodes.
+    IDF.setLiveInBlocks(LiveInBlocks);
+    IDF.setDefiningBlocks(DefBlocks);
+    SmallVector<BasicBlock *, 32> PHIBlocks;
+    IDF.calculate(PHIBlocks);
+    llvm::sort(PHIBlocks, [this](BasicBlock *A, BasicBlock *B) {
+      return BBNumbers.find(A)->second < BBNumbers.find(B)->second;
+    });
+
+    unsigned CurrentVersion = 0;
+    for (BasicBlock *BB : PHIBlocks)
+      QueuePhiNode(BB, GEPNum, CurrentVersion);
   }
 
+  if (GEPs.empty())
+    return; // All of the allocas must have been trivial!
+
+  LBI.clear();
+**/
+// TODO:step2    
+/**
+  // Set the incoming values for the basic block to be null values for all of
+  // the alloca's.  We do this in case there is a load of a value that has not
+  // been stored yet.  In this case, it will get this null value.
+  RenamePassData::ValVector Values(GEPs.size());
+  for (unsigned i = 0, e = GEPs.size(); i != e; ++i)
+    Values[i] = UndefValue::get(GEPs[i]->getResultElementType());
+
+  // When handling debug info, treat all incoming values as if they have unknown
+  // locations until proven otherwise.
+  RenamePassData::LocationVector Locations(GEPs.size());
+
+  // Walks all basic blocks in the function performing the SSA rename algorithm
+  // and inserting the phi nodes we marked as necessary
+  std::vector<RenamePassData> RenamePassWorkList;
+  RenamePassWorkList.emplace_back(&F.front(), nullptr, std::move(Values),
+                                  std::move(Locations));
+  do {
+    RenamePassData RPD = std::move(RenamePassWorkList.back());
+    RenamePassWorkList.pop_back();
+    // RenamePass may add new worklist entries.
+    RenamePass(RPD.BB, RPD.Pred, RPD.Values, RPD.Locations, RenamePassWorkList);
+  } while (!RenamePassWorkList.empty());
+
+  // The renamer uses the Visited set to avoid infinite loops.  Clear it now.
+  Visited.clear();
+
+  // Remove the allocas themselves from the function.
+  for (Instruction *G : GEPs) {
+    // If there are any uses of the alloca instructions left, they must be in
+    // unreachable basic blocks that were not processed by walking the dominator
+    // tree. Just delete the users now.
+    if (!G->use_empty())
+      G->replaceAllUsesWith(PoisonValue::get(G->getType()));
+    G->eraseFromParent();
+  }
+**/
+//TODO:step3
+    /**
+    // Loop over all of the PHI nodes and see if there are any that we can get
+  // rid of because they merge all of the same incoming values.  This can
+  // happen due to undef values coming into the PHI nodes.  This process is
+  // iterative, because eliminating one PHI node can cause others to be removed.
+  bool EliminatedAPHI = true;
+  while (EliminatedAPHI) {
+    EliminatedAPHI = false;
+
+    // Iterating over NewPhiNodes is deterministic, so it is safe to try to
+    // simplify and RAUW them as we go.  If it was not, we could add uses to
+    // the values we replace with in a non-deterministic order, thus creating
+    // non-deterministic def->use chains.
+    for (DenseMap<std::pair<unsigned, unsigned>, PHINode *>::iterator
+             I = NewPhiNodes.begin(),
+             E = NewPhiNodes.end();
+         I != E;) {
+      PHINode *PN = I->second;
+
+      // If this PHI node merges one value and/or undefs, get the value.
+      if (Value *V = simplifyInstruction(PN, SQ)) {
+        PN->replaceAllUsesWith(V);
+        PN->eraseFromParent();
+        NewPhiNodes.erase(I++);
+        EliminatedAPHI = true;
+        continue;
+      }
+      ++I;
+    }
+  }
+
+  // At this point, the renamer has added entries to PHI nodes for all reachable
+  // code.  Unfortunately, there may be unreachable blocks which the renamer
+  // hasn't traversed.  If this is the case, the PHI nodes may not
+  // have incoming values for all predecessors.  Loop over all PHI nodes we have
+  // created, inserting undef values if they are missing any incoming values.
+  for (DenseMap<std::pair<unsigned, unsigned>, PHINode *>::iterator
+           I = NewPhiNodes.begin(),
+           E = NewPhiNodes.end();
+       I != E; ++I) {
+    // We want to do this once per basic block.  As such, only process a block
+    // when we find the PHI that is the first entry in the block.
+    PHINode *SomePHI = I->second;
+    BasicBlock *BB = SomePHI->getParent();
+    if (&BB->front() != SomePHI)
+      continue;
+
+    // Only do work here if there the PHI nodes are missing incoming values.  We
+    // know that all PHI nodes that were inserted in a block will have the same
+    // number of incoming values, so we can just check any of them.
+    if (SomePHI->getNumIncomingValues() == getNumPreds(BB))
+      continue;
+
+    // Get the preds for BB.
+    SmallVector<BasicBlock *, 16> Preds(predecessors(BB));
+
+    // Ok, now we know that all of the PHI nodes are missing entries for some
+    // basic blocks.  Start by sorting the incoming predecessors for efficient
+    // access.
+    auto CompareBBNumbers = [this](BasicBlock *A, BasicBlock *B) {
+      return BBNumbers.find(A)->second < BBNumbers.find(B)->second;
+    };
+    llvm::sort(Preds, CompareBBNumbers);
+
+    // Now we loop through all BB's which have entries in SomePHI and remove
+    // them from the Preds list.
+    for (unsigned i = 0, e = SomePHI->getNumIncomingValues(); i != e; ++i) {
+      // Do a log(n) search of the Preds list for the entry we want.
+      SmallVectorImpl<BasicBlock *>::iterator EntIt = llvm::lower_bound(
+          Preds, SomePHI->getIncomingBlock(i), CompareBBNumbers);
+      assert(EntIt != Preds.end() && *EntIt == SomePHI->getIncomingBlock(i) &&
+             "PHI node has entry for a block which is not a predecessor!");
+
+      // Remove the entry
+      Preds.erase(EntIt);
+    }
+
+    // At this point, the blocks left in the preds list must have dummy
+    // entries inserted into every PHI nodes for the block.  Update all the phi
+    // nodes in this block that we are inserting (there could be phis before
+    // mem2reg runs).
+    unsigned NumBadPreds = SomePHI->getNumIncomingValues();
+    BasicBlock::iterator BBI = BB->begin();
+    while ((SomePHI = dyn_cast<PHINode>(BBI++)) &&
+           SomePHI->getNumIncomingValues() == NumBadPreds) {
+      Value *UndefVal = UndefValue::get(SomePHI->getType());
+      for (BasicBlock *Pred : Preds)
+        SomePHI->addIncoming(UndefVal, Pred);
+    }
+    **/
+  }
+  NewPhiNodes.clear();
 }
 
 void GEPpromoteMemToReg(ArrayRef<GetElementPtrInst*> GEPs, DominatorTree &DT, AssumptionCache *AC){
@@ -350,7 +597,7 @@ static bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCa
         if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(I)){ // Use GEP
                                                                      // But there is a question "Is GEP's situation the same as alloc?"
           if(isGEPPromotable(GEP)){ 
-            llvm::outs()<<"push:"<<*GEP<<"\n";
+            //llvm::outs()<<"push:"<<*GEP<<"\n";
             GEPs.push_back(GEP);
           }
         }
@@ -359,10 +606,10 @@ static bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCa
         //目前仅仅实现了SingleStore情况
         //所以 + 1临时用于debug
         //后期需要删除
-        llvm::outs()<<"can brea\n";
+        //llvm::outs()<<"can brea\n";
         break;
       }
-      llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
+      //llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
       GEPpromoteMemToReg(GEPs,DT,&AC);
       break;//临时加的，后面记得删掉
             //忽略NumPromoted
