@@ -1,15 +1,3 @@
-push:  %15 = getelementptr i8, ptr addrspace(1) %1, i64 136
-push:  %16 = getelementptr i8, ptr addrspace(1) %1, i64 137
-push:  %17 = getelementptr i8, ptr addrspace(1) %1, i64 138
-push:  %18 = getelementptr i8, ptr addrspace(1) %1, i64 139
-push:  %19 = getelementptr i8, ptr addrspace(1) %1, i64 140
-push:  %20 = getelementptr i8, ptr addrspace(1) %1, i64 141
-push:  %23 = getelementptr i8, ptr %22, i64 -4
-push:  %24 = getelementptr i8, ptr %22, i64 -20
-push:  %25 = getelementptr i8, ptr %22, i64 -24
-push:  %26 = getelementptr i8, ptr %22, i64 -28
-push:  %27 = getelementptr i8, ptr %22, i64 -8
-GEPs size:11
 ; ModuleID = './afterInstru.ll'
 source_filename = "mod"
 
@@ -44,6 +32,7 @@ define hhvmcc { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64,
   br label %28
 
 28:                                               ; preds = %72, %14
+  %.0 = phi i8 
   %29 = phi i32 [ %62, %72 ], [ 20, %14 ]
   %30 = phi i32 [ 10, %72 ], [ 10, %14 ]
   %31 = phi i32 [ %74, %72 ], [ 0, %14 ]
