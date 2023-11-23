@@ -19,11 +19,14 @@
 #include <llvm/Analysis/InstructionSimplify.h>
 #include <llvm/Analysis//IteratedDominanceFrontier.h>
 #include <llvm/Support/raw_ostream.h>
+#include <map>
 
 using namespace llvm;
 
 static int NumSingelStoreGEP = 0;//NumSingleStore for GEP
 int NumPromoteGEP = 0;
+std::map<GetElementPtrInst*,Type*> GEPStoreType;
+
 namespace{
 
 struct GEPInfo{
@@ -53,6 +56,7 @@ struct GEPInfo{
 
       if (StoreInst *SI = dyn_cast<StoreInst>(User)) {
         // Remember the basic blocks which define new values for the alloca
+        GEPStoreType[GEP] = SI->getValueOperand()->getType();
         DefiningBlocks.push_back(SI->getParent());
         OnlyStore = SI;
       } else {
@@ -411,7 +415,7 @@ bool GEPpromoteMem2Reg::QueuePhiNode(BasicBlock *BB, unsigned GEPNo, unsigned &V
 
   // Create a PhiNode using the dereferenced type... and add the phi-node to the
   // BasicBlock.
-  PN = PHINode::Create(GEPs[GEPNo]->getResultElementType(), getNumPreds(BB),
+  PN = PHINode::Create(GEPStoreType[GEPs[GEPNo]], getNumPreds(BB),
                        GEPs[GEPNo]->getName() + "." + Twine(Version++),
                        &BB->front());
   PhiToGEPMap[PN] = GEPNo;
@@ -623,6 +627,7 @@ void GEPpromoteMem2Reg::run(){
         BBNumbers[&BB] = ID++;
       }
     }
+  
     //No.3
     // Keep the reverse mapping of the 'Allocas' array for the rename pass.
     GEPLookup[GEPs[GEPNum]] = GEPNum;
@@ -656,19 +661,14 @@ void GEPpromoteMem2Reg::run(){
   if (GEPs.empty())
     return; // All of the allocas must have been trivial!
 
-  LBI.clear();
-
-  // TODO:step2    
-
-
-  //类型不正确
+  LBI.clear();  
 
   // Set the incoming values for the basic block to be null values for all of
   // the alloca's.  We do this in case there is a load of a value that has not
   // been stored yet.  In this case, it will get this null value.
   RenamePassData::ValVector Values(GEPs.size());
   for (unsigned i = 0, e = GEPs.size(); i != e; ++i)
-    Values[i] = UndefValue::get(GEPs[i]->getResultElementType());
+    Values[i] = UndefValue::get(GEPStoreType[GEPs[i]]);
 
   // When handling debug info, treat all incoming values as if they have unknown
   // locations until proven otherwise.
