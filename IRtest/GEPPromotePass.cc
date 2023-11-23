@@ -201,10 +201,10 @@ bool GEPrewriteSingleStore(GetElementPtrInst *GEP, GEPInfo &Info,
                            DominatorTree &DT, AssumptionCache *AC);
 void GEPaddAssumeNonNull(AssumptionCache *AC, LoadInst *LI);
 bool GEPpromoteSingleBlock(GetElementPtrInst *GEP, const GEPInfo &Info,
-                                 LargeBlockInfo &LBI,
-                                 const DataLayout &DL,
-                                 DominatorTree &DT,
-                                 AssumptionCache *AC);
+                           LargeBlockInfo &LBI,
+                           const DataLayout &DL,
+                           DominatorTree &DT,
+                           AssumptionCache *AC);
 void GEPupdateForIncomingValueLocation(PHINode *PN, DebugLoc DL,bool ApplyMergedLoc);
 
 void GEPupdateForIncomingValueLocation(PHINode *PN, DebugLoc DL,bool ApplyMergedLoc) {
@@ -280,9 +280,9 @@ void GEPpromoteMem2Reg::ComputeLiveInBlocks(GetElementPtrInst *GEP, GEPInfo &Inf
 
 }
 void GEPpromoteMem2Reg::RenamePass(BasicBlock *BB, BasicBlock *Pred,
-                RenamePassData::ValVector &IncVals,
-                RenamePassData::LocationVector &IncLocs,
-                std::vector<RenamePassData> &Worklist){
+                                   RenamePassData::ValVector &IncVals,
+                                   RenamePassData::LocationVector &IncLocs,
+                                   std::vector<RenamePassData> &Worklist){
 NextIteration:
   // If we are inserting any phi nodes into this BB, they will already be in the
   // block.
@@ -308,8 +308,10 @@ NextIteration:
 
         // Update the location of the phi node.
         GEPupdateForIncomingValueLocation(APN, IncLocs[GEPNo],
-                                       APN->getNumIncomingValues() > 0);
+                                          APN->getNumIncomingValues() > 0);
 
+        //这个地方出现了问题，phi类型不匹配，但是主要问题是
+        // %.0 = phi %8是什么玩意
         // Add N incoming values to the PHI node.
         for (unsigned i = 0; i != NumEdges; ++i)
           APN->addIncoming(IncVals[GEPNo], Pred);
@@ -371,7 +373,7 @@ NextIteration:
       // what value were we writing?
       unsigned GEPNo = gep->second;
       IncVals[GEPNo] = SI->getOperand(0);
-//TODO：这里涉及store指令的删除，可能根据后续需要进行修改
+      //TODO：这里涉及store指令的删除，可能根据后续需要进行修改
       // Record debuginfo for the store before removing it.
       IncLocs[GEPNo] = SI->getDebugLoc();
       BB->getInstList().erase(SI);
@@ -400,7 +402,7 @@ NextIteration:
 }
 
 bool GEPpromoteMem2Reg::QueuePhiNode(BasicBlock *BB, unsigned GEPNo, unsigned &Version){
-// Look up the basic-block in question.
+  // Look up the basic-block in question.
   PHINode *&PN = NewPhiNodes[std::make_pair(BBNumbers[BB], GEPNo)];
 
   // If the BB already has a phi node added for the i'th alloca then we're done!
@@ -419,10 +421,10 @@ bool GEPpromoteMem2Reg::QueuePhiNode(BasicBlock *BB, unsigned GEPNo, unsigned &V
 
 
 bool GEPpromoteSingleBlock(GetElementPtrInst *GEP, const GEPInfo &Info,
-                                 LargeBlockInfo &LBI,
-                                 const DataLayout &DL,
-                                 DominatorTree &DT,
-                                 AssumptionCache *AC){
+                           LargeBlockInfo &LBI,
+                           const DataLayout &DL,
+                           DominatorTree &DT,
+                           AssumptionCache *AC){
   using StoresByIndexTy = SmallVector<std::pair<unsigned, StoreInst *>, 64>;
   StoresByIndexTy StoresByIndex;
 
@@ -657,13 +659,16 @@ void GEPpromoteMem2Reg::run(){
   LBI.clear();
 
   // TODO:step2    
-  /**
+
+
+  //类型不正确
+
   // Set the incoming values for the basic block to be null values for all of
   // the alloca's.  We do this in case there is a load of a value that has not
   // been stored yet.  In this case, it will get this null value.
   RenamePassData::ValVector Values(GEPs.size());
   for (unsigned i = 0, e = GEPs.size(); i != e; ++i)
-  Values[i] = UndefValue::get(GEPs[i]->getResultElementType());
+    Values[i] = UndefValue::get(GEPs[i]->getResultElementType());
 
   // When handling debug info, treat all incoming values as if they have unknown
   // locations until proven otherwise.
@@ -673,12 +678,12 @@ void GEPpromoteMem2Reg::run(){
   // and inserting the phi nodes we marked as necessary
   std::vector<RenamePassData> RenamePassWorkList;
   RenamePassWorkList.emplace_back(&F.front(), nullptr, std::move(Values),
-  std::move(Locations));
+                                  std::move(Locations));
   do {
-  RenamePassData RPD = std::move(RenamePassWorkList.back());
-  RenamePassWorkList.pop_back();
-  // RenamePass may add new worklist entries.
-  RenamePass(RPD.BB, RPD.Pred, RPD.Values, RPD.Locations, RenamePassWorkList);
+    RenamePassData RPD = std::move(RenamePassWorkList.back());
+    RenamePassWorkList.pop_back();
+    // RenamePass may add new worklist entries.
+    RenamePass(RPD.BB, RPD.Pred, RPD.Values, RPD.Locations, RenamePassWorkList);
   } while (!RenamePassWorkList.empty());
 
   // The renamer uses the Visited set to avoid infinite loops.  Clear it now.
@@ -686,14 +691,14 @@ void GEPpromoteMem2Reg::run(){
 
   // Remove the allocas themselves from the function.
   for (Instruction *G : GEPs) {
-  // If there are any uses of the alloca instructions left, they must be in
-  // unreachable basic blocks that were not processed by walking the dominator
-  // tree. Just delete the users now.
-  if (!G->use_empty())
-  G->replaceAllUsesWith(PoisonValue::get(G->getType()));
-  G->eraseFromParent();
+    // If there are any uses of the alloca instructions left, they must be in
+    // unreachable basic blocks that were not processed by walking the dominator
+    // tree. Just delete the users now.
+    if (!G->use_empty())
+      G->replaceAllUsesWith(PoisonValue::get(G->getType()));
+    G->eraseFromParent();
   }
-   **/
+
   //TODO:step3
   /**
   // Loop over all of the PHI nodes and see if there are any that we can get
