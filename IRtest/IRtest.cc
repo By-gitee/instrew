@@ -1,4 +1,6 @@
 #include "GEPPromotePass.h"
+#include "ScopDetection.h"
+#include "ScopInfo.h"
 #include <cstdio>
 #include <fstream>
 #include <ios>
@@ -27,12 +29,22 @@
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/InstCombine/InstCombine.h>
 #include <llvm/Transforms/Scalar/DCE.h>
 #include <llvm/Transforms/Scalar/EarlyCSE.h>
+#include <llvm/Transforms/Scalar/IndVarSimplify.h>
 #include <llvm/Transforms/Scalar/LoopPassManager.h>
+#include <llvm/Transforms/Scalar/LoopRotation.h>
+#include <llvm/Transforms/Scalar/Reassociate.h>
+#include <llvm/Transforms/Scalar/SimplifyCFG.h>
+#include <llvm/Transforms/Scalar/TailRecursionElimination.h>
 #include <llvm/Transforms/Utils/Mem2Reg.h>
 #include <llvm/Transforms/Scalar/GVN.h>
 #include <memory>
+#include <polly/CodeGen/IslAst.h>
+#include <polly/CodePreparation.h>
+#include <polly/DependenceInfo.h>
+#include <polly/ScopPass.h>
 #include <queue>
 #include <system_error>
 #include <iostream>
@@ -71,23 +83,67 @@ int main(int argc, char **argv){
   llvm::PassBuilder pb;
   llvm::FunctionPassManager fpm;
   llvm::ModulePassManager mpm;
+  polly::ScopPassManager spm;
+  llvm::LoopPassManager lpm;
 
+  llvm::LoopAnalysisManager lam;
   llvm::FunctionAnalysisManager fam;
+  llvm::CGSCCAnalysisManager cgam;
   llvm::ModuleAnalysisManager mam;
+  polly::ScopAnalysisManager sam;
+  
   
   pb.registerModuleAnalyses(mam);
   pb.registerFunctionAnalyses(fam);
+  pb.registerLoopAnalyses(lam);
+  pb.registerCGSCCAnalyses(cgam);
+
+  fam.registerPass([&]{return polly::ScopAnalysis();});
+  fam.registerPass([&]{return polly::ScopInfoAnalysis();});
+  sam.registerPass([&]{return polly::DependenceAnalysis();});
+  sam.registerPass([&]{return polly::IslAstAnalysis();});
 
   mam.registerPass([&]{return llvm::FunctionAnalysisManagerModuleProxy(fam);});
   fam.registerPass([&]{return llvm::ModuleAnalysisManagerFunctionProxy(mam);});
+
+  fam.registerPass([&]{return polly::ScopAnalysisManagerFunctionProxy(sam);});
+  sam.registerPass([&]{return polly::FunctionAnalysisManagerScopProxy(fam);});
+
   fam.registerPass([&]{return llvm::PassInstrumentationAnalysis();});
+  sam.registerPass([&]{return llvm::PassInstrumentationAnalysis();});
+
+  pb.crossRegisterProxies(lam,fam,cgam,mam);
   
   // Add Pass
   fpm.addPass(llvm::DCEPass());
   fpm.addPass(llvm::GVNPass());
   fpm.addPass(llvm::EarlyCSEPass(true));
   fpm.addPass(llvm::GEPPromotePass());
+  fpm.addPass(llvm::EarlyCSEPass(true));
+  fpm.addPass(llvm::InstCombinePass());
+  fpm.addPass(llvm::SimplifyCFGPass());
+  fpm.addPass(llvm::TailCallElimPass());
+  fpm.addPass(llvm::SimplifyCFGPass());
+  fpm.addPass(llvm::ReassociatePass());
 
+ {
+    llvm::LoopPassManager lpm{};
+    lpm.addPass(llvm::LoopRotatePass());
+    fpm.addPass(llvm::createFunctionToLoopPassAdaptor<llvm::LoopPassManager>(std::move(lpm),false,false));
+  }
+
+  fpm.addPass(llvm::InstCombinePass());
+
+  {
+    llvm::LoopPassManager lpm{};
+    lpm.addPass(llvm::IndVarSimplifyPass());
+    fpm.addPass(llvm::createFunctionToLoopPassAdaptor<llvm::LoopPassManager>(std::move(lpm),false,true));
+  }
+
+  fpm.addPass(polly::CodePreparationPass());
+
+
+  fpm.addPass(polly::createFunctionToScopPassAdaptor(std::move(spm)));
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
   mpm.run(*Mod,mam);
 

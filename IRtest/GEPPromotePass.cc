@@ -492,7 +492,10 @@ bool GEPpromoteSingleBlock(GetElementPtrInst *GEP, const GEPInfo &Info,
     LBI.deleteValue(SI);
   }
   //暂时不可以删除GEP
-
+  //TODO
+  //暂时删除GEP
+  //  GEP->eraseFromParent();//！！！暂时删除
+                    
   return true;
 }
 
@@ -564,10 +567,12 @@ bool GEPrewriteSingleStore(GetElementPtrInst *GEP, GEPInfo &Info,
     return false; // If not, we'll have to fall back for the remainder.
   }
   // store以及GEP指令暂时不能够删除，留作后续分析
-  //Info.OnlyStore->eraseFromParent();
-  //LBI.deleteValue(Info.OnlyStore);
-
-  //GEP->eraseFromParent();
+//  暂时删除store指令，后续分析哪些应该保留，以及怎样保留
+  //llvm::outs()<<*Info.OnlyStore<<"\n";
+  //Info.OnlyStore->eraseFromParent();//！！暂时删除
+  //LBI.deleteValue(Info.OnlyStore);//！！！暂时删除
+  //llvm::outs()<<*GEP<<"  I have problem\n";
+  //GEP->eraseFromParent();//！！！！暂时删除
   return true;
 }
 
@@ -602,13 +607,19 @@ void GEPpromoteMem2Reg::run(){
     //判断use_empty没有必要
     //因为在目前的优化下GEP仅剩第一次指令
     //不可删除，要用来做函数参数
+    if(GEP->use_empty()){
+  //    GEP->eraseFromParent();//！！！暂时删除
+      ++NumPromoteGEP;
+      continue;
+    }
 
     Info.AnalyzeGEP(GEP);
     // No.1
     if(Info.DefiningBlocks.size() == 1){
       if(GEPrewriteSingleStore(GEP,Info,LBI,SQ.DL,DT,AC)){
         RemoveFromGEPsList(GEPNum);
-        ++NumPromoteGEP;
+    //   llvm::outs()<<*GEP<<"\n";
+       ++NumPromoteGEP;
         ++NumSingelStoreGEP;
         continue;
       }
@@ -617,6 +628,7 @@ void GEPpromoteMem2Reg::run(){
     if(Info.OnlyUsedInOneBlock &&
        GEPpromoteSingleBlock(GEP,Info,LBI,SQ.DL,DT,AC)){
       RemoveFromGEPsList(GEPNum);
+ //     llvm::outs()<<*GEP<<"\n";
       ++NumPromoteGEP;
       continue;
     }
@@ -696,7 +708,9 @@ void GEPpromoteMem2Reg::run(){
     // tree. Just delete the users now.
     if (!G->use_empty())
       G->replaceAllUsesWith(PoisonValue::get(G->getType()));
+    //暂时不可以删除哈
     G->eraseFromParent();
+    //++NumPromoteGEP;
   }
 
   //TODO
@@ -806,7 +820,6 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
   for(auto& BB:F){ 
     while(true){
       GEPs.clear();
-      NumPromoteGEP = 0;
 
       for(BasicBlock::iterator I=BB.begin(),E=--BB.end();I!=E;++I){
         if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(I)){ // Use GEP
@@ -817,20 +830,24 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
           }
         }
       }
-      if(NumPromoteGEP + 1 == GEPs.size())  {
+      //llvm::outs()<<" NumPromoteGEP:"<<NumPromoteGEP<<" GEPs.size():"<<GEPs.size()<<"\n";
+      if(NumPromoteGEP == GEPs.size())  {
         //目前仅仅实现了SingleStore情况
         //所以 + 1临时用于debug
         //后期需要删除
         //llvm::outs()<<"can brea\n";
         break;
       }
+      NumPromoteGEP = 0;
       //llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
       GEPpromoteMemToReg(GEPs,DT,&AC);
-      break;//临时加的，后面记得删掉
+     // llvm::outs()<<NumPromoteGEP<<"\n";
+      //break;//临时加的，后面记得删掉
             //忽略NumPromoted
       Changed = true;
     }
-    break;//临时加的，后面记得删掉
+    //break;//临时加的，后面记得删掉
+
   }
   return Changed;
 }
