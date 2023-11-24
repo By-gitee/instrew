@@ -1,3 +1,61 @@
+[Bydebug]-1
+[Bydebug]-2
+[Bydebug]-3
+[Bydebug]-4
+[Bydebug]-5
+[Bydebug]-6
+[Bydebug]-61
+[Bydebug]-62
+[Bydebug]-63
+[Bydebug]-61
+[Bydebug]-62
+[Bydebug]-63
+[Bydebug]-61
+[Bydebug]-62
+[Bydebug]-63
+[Bydebug]-61
+[Bydebug]-62
+happen
+[Bydebug]-64
+[Bydebug]-65
+[Bydebug]-651
+[Bydebug]-652
+[Bydebug]-66
+[Bydebug]-64
+[Bydebug]-65
+[Bydebug]-66
+[Bydebug]-64
+[Bydebug]-65
+[Bydebug]-66
+%14 => <Function Return>
+[Bydebug]-6 ValidRegions.size(): 1
+[Bydebug]-7
+[Bydebug]-7 for
+[Bydebug]-71 ValidRegions.size(): 1
+[Bydebug]-7 for
+[Bydebug]-71 ValidRegions.size(): 1
+[Bydebug]-72 ValidRegions.size(): 1
+[Bydebug]-73 ValidRegions.size(): 1
+[Bydebug]isProfitableRegion - 1
+[Bydebug]isProfitableRegion - 2
+.temp.branch => %49: 0 0
+[0] .temp.branch => %49
+//isProfitableRegion内外层循环，只认出来了内层循环
+[Bydebug]-74 ValidRegions.size(): 1
+[Bydebug]-75 ValidRegions.size(): 0
+[Bydebug]-7 for
+[Bydebug]-71 ValidRegions.size(): 0
+[Bydebug]-72 ValidRegions.size(): 0
+[Bydebug]-7 for
+[Bydebug]-71 ValidRegions.size(): 0
+[Bydebug]-8
+[Bydebug]-8 ValidRegions.size(): 0
+[Bydebug]-9
+[Bydebug]-9 ValidRegions.size(): 0
+[Bydebug]-10
+[Bydebug]-10 ValidRegions.size(): 0
+[Bydebug]-11
+[ByDebug]recomput
 ; ModuleID = './afterInstru.ll'
 source_filename = "mod"
 
@@ -8,7 +66,7 @@ declare void @syscall(ptr addrspace(1))
 
 declare { i64, i64 } @cpuid(i32, i32)
 
-; Function Attrs: null_pointer_is_valid
+; Function Attrs: mustprogress nofree norecurse nosync nounwind null_pointer_is_valid uwtable
 define hhvmcc { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } @S0_hhvm(i64 %0, ptr addrspace(1) noalias nocapture align 16 dereferenceable(400) %1, i64 %2, i64 %3, i64 %4, i64 %5, i64 %6, i64 %7, i64 %8, i64 %9, i64 %10, i64 %11, i64 %12, i64 %13) #0 {
   br label %.split
 
@@ -84,9 +142,10 @@ define hhvmcc { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64,
   br i1 true, label %49, label %.temp.branch
 }
 
-attributes #0 = { null_pointer_is_valid }
+attributes #0 = { mustprogress nofree norecurse nosync nounwind null_pointer_is_valid uwtable "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 
 !llvm.module.flags = !{!1}
 
 !0 = !{i64 -1, i64 -1}
 !1 = !{i32 1, !"override-stack-alignment", i32 8}
+[Bydebug]ScopInfo is empty.
