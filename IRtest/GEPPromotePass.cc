@@ -627,7 +627,7 @@ void GEPpromoteMem2Reg::run(){
         BBNumbers[&BB] = ID++;
       }
     }
-  
+
     //No.3
     // Keep the reverse mapping of the 'Allocas' array for the rename pass.
     GEPLookup[GEPs[GEPNum]] = GEPNum;
@@ -699,36 +699,35 @@ void GEPpromoteMem2Reg::run(){
     G->eraseFromParent();
   }
 
-  //TODO:step3
-  /**
+  //TODO
   // Loop over all of the PHI nodes and see if there are any that we can get
   // rid of because they merge all of the same incoming values.  This can
   // happen due to undef values coming into the PHI nodes.  This process is
   // iterative, because eliminating one PHI node can cause others to be removed.
   bool EliminatedAPHI = true;
   while (EliminatedAPHI) {
-  EliminatedAPHI = false;
+    EliminatedAPHI = false;
 
-  // Iterating over NewPhiNodes is deterministic, so it is safe to try to
-  // simplify and RAUW them as we go.  If it was not, we could add uses to
-  // the values we replace with in a non-deterministic order, thus creating
-  // non-deterministic def->use chains.
-  for (DenseMap<std::pair<unsigned, unsigned>, PHINode *>::iterator
-  I = NewPhiNodes.begin(),
-  E = NewPhiNodes.end();
-  I != E;) {
-  PHINode *PN = I->second;
+    // Iterating over NewPhiNodes is deterministic, so it is safe to try to
+    // simplify and RAUW them as we go.  If it was not, we could add uses to
+    // the values we replace with in a non-deterministic order, thus creating
+    // non-deterministic def->use chains.
+    for (DenseMap<std::pair<unsigned, unsigned>, PHINode *>::iterator
+         I = NewPhiNodes.begin(),
+         E = NewPhiNodes.end();
+         I != E;) {
+      PHINode *PN = I->second;
 
-  // If this PHI node merges one value and/or undefs, get the value.
-  if (Value *V = simplifyInstruction(PN, SQ)) {
-  PN->replaceAllUsesWith(V);
-  PN->eraseFromParent();
-  NewPhiNodes.erase(I++);
-  EliminatedAPHI = true;
-  continue;
-  }
-  ++I;
-  }
+      // If this PHI node merges one value and/or undefs, get the value.
+      if (Value *V = simplifyInstruction(PN, SQ)) {
+        PN->replaceAllUsesWith(V);
+        PN->eraseFromParent();
+        NewPhiNodes.erase(I++);
+        EliminatedAPHI = true;
+        continue;
+      }
+      ++I;
+    }
   }
 
   // At this point, the renamer has added entries to PHI nodes for all reachable
@@ -737,61 +736,62 @@ void GEPpromoteMem2Reg::run(){
   // have incoming values for all predecessors.  Loop over all PHI nodes we have
   // created, inserting undef values if they are missing any incoming values.
   for (DenseMap<std::pair<unsigned, unsigned>, PHINode *>::iterator
-  I = NewPhiNodes.begin(),
-  E = NewPhiNodes.end();
-  I != E; ++I) {
-  // We want to do this once per basic block.  As such, only process a block
-  // when we find the PHI that is the first entry in the block.
-  PHINode *SomePHI = I->second;
-  BasicBlock *BB = SomePHI->getParent();
-  if (&BB->front() != SomePHI)
-  continue;
+       I = NewPhiNodes.begin(),
+       E = NewPhiNodes.end();
+       I != E; ++I) {
+    // We want to do this once per basic block.  As such, only process a block
+    // when we find the PHI that is the first entry in the block.
+    PHINode *SomePHI = I->second;
+    BasicBlock *BB = SomePHI->getParent();
+    if (&BB->front() != SomePHI)
+      continue;
 
-  // Only do work here if there the PHI nodes are missing incoming values.  We
-  // know that all PHI nodes that were inserted in a block will have the same
-  // number of incoming values, so we can just check any of them.
-  if (SomePHI->getNumIncomingValues() == getNumPreds(BB))
-  continue;
+    // Only do work here if there the PHI nodes are missing incoming values.  We
+    // know that all PHI nodes that were inserted in a block will have the same
+    // number of incoming values, so we can just check any of them.
+    if (SomePHI->getNumIncomingValues() == getNumPreds(BB))
+      continue;
 
-  // Get the preds for BB.
-  SmallVector<BasicBlock *, 16> Preds(predecessors(BB));
+    // Get the preds for BB.
+    SmallVector<BasicBlock *, 16> Preds(predecessors(BB));
 
-  // Ok, now we know that all of the PHI nodes are missing entries for some
-  // basic blocks.  Start by sorting the incoming predecessors for efficient
-  // access.
-  auto CompareBBNumbers = [this](BasicBlock *A, BasicBlock *B) {
-  return BBNumbers.find(A)->second < BBNumbers.find(B)->second;
-  };
-  llvm::sort(Preds, CompareBBNumbers);
+    // Ok, now we know that all of the PHI nodes are missing entries for some
+    // basic blocks.  Start by sorting the incoming predecessors for efficient
+    // access.
+    auto CompareBBNumbers = [this](BasicBlock *A, BasicBlock *B) {
+      return BBNumbers.find(A)->second < BBNumbers.find(B)->second;
+    };
+    llvm::sort(Preds, CompareBBNumbers);
 
-  // Now we loop through all BB's which have entries in SomePHI and remove
-  // them from the Preds list.
-  for (unsigned i = 0, e = SomePHI->getNumIncomingValues(); i != e; ++i) {
-  // Do a log(n) search of the Preds list for the entry we want.
-  SmallVectorImpl<BasicBlock *>::iterator EntIt = llvm::lower_bound(
-  Preds, SomePHI->getIncomingBlock(i), CompareBBNumbers);
-  assert(EntIt != Preds.end() && *EntIt == SomePHI->getIncomingBlock(i) &&
-  "PHI node has entry for a block which is not a predecessor!");
+    // Now we loop through all BB's which have entries in SomePHI and remove
+    // them from the Preds list.
+    for (unsigned i = 0, e = SomePHI->getNumIncomingValues(); i != e; ++i) {
+      // Do a log(n) search of the Preds list for the entry we want.
+      SmallVectorImpl<BasicBlock *>::iterator EntIt = llvm::lower_bound(
+                                                                        Preds, SomePHI->getIncomingBlock(i), CompareBBNumbers);
+      assert(EntIt != Preds.end() && *EntIt == SomePHI->getIncomingBlock(i) &&
+             "PHI node has entry for a block which is not a predecessor!");
 
-  // Remove the entry
-  Preds.erase(EntIt);
-}
+      // Remove the entry
+      Preds.erase(EntIt);
+    }
 
-// At this point, the blocks left in the preds list must have dummy
-// entries inserted into every PHI nodes for the block.  Update all the phi
-// nodes in this block that we are inserting (there could be phis before
-// mem2reg runs).
-unsigned NumBadPreds = SomePHI->getNumIncomingValues();
-BasicBlock::iterator BBI = BB->begin();
-while ((SomePHI = dyn_cast<PHINode>(BBI++)) &&
-       SomePHI->getNumIncomingValues() == NumBadPreds) {
-  Value *UndefVal = UndefValue::get(SomePHI->getType());
-  for (BasicBlock *Pred : Preds)
-    SomePHI->addIncoming(UndefVal, Pred);
-}
-**/
+    // At this point, the blocks left in the preds list must have dummy
+    // entries inserted into every PHI nodes for the block.  Update all the phi
+    // nodes in this block that we are inserting (there could be phis before
+    // mem2reg runs).
+    unsigned NumBadPreds = SomePHI->getNumIncomingValues();
+    BasicBlock::iterator BBI = BB->begin();
+    while ((SomePHI = dyn_cast<PHINode>(BBI++)) &&
+           SomePHI->getNumIncomingValues() == NumBadPreds) {
+      Value *UndefVal = UndefValue::get(SomePHI->getType());
+      for (BasicBlock *Pred : Preds)
+        SomePHI->addIncoming(UndefVal, Pred);
+    }
+  }
 
-NewPhiNodes.clear();
+
+  NewPhiNodes.clear();
 }
 
 void GEPpromoteMemToReg(ArrayRef<GetElementPtrInst*> GEPs, DominatorTree &DT, AssumptionCache *AC){
