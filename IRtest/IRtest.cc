@@ -121,6 +121,7 @@ int main(int argc, char **argv){
   fpm.addPass(llvm::GEPPromotePass());
   fpm.addPass(llvm::EarlyCSEPass(true));
   fpm.addPass(llvm::InstCombinePass());
+  
   fpm.addPass(llvm::SimplifyCFGPass());
   fpm.addPass(llvm::TailCallElimPass());
   fpm.addPass(llvm::SimplifyCFGPass());
@@ -140,10 +141,12 @@ int main(int argc, char **argv){
     fpm.addPass(llvm::createFunctionToLoopPassAdaptor<llvm::LoopPassManager>(std::move(lpm),false,true));
   }
 
+  fpm.addPass(llvm::InstCombinePass());
   fpm.addPass(polly::CodePreparationPass());
 
 
   fpm.addPass(polly::createFunctionToScopPassAdaptor(std::move(spm)));
+
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
   mpm.run(*Mod,mam);
 

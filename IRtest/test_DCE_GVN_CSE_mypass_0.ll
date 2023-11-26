@@ -12,82 +12,16 @@ push:  %77 = getelementptr i8, ptr %22, i64 -16
 [Bydebug]-5
 [Bydebug]-6
 [Bydebug]-61
-判定
-Checking region:%14 => <Function Return>
-	[Bydebug]-62
-0 0
+[Bydebug]-62
 [Bydebug]-63
 [Bydebug]-61
-判定
-Checking region:.preheader => %17
-	ret1
-ret2
-ret3
-ret4
-ret5
-    allBlocksValid - 1
-    0
-  store i32 %.0310, ptr %46, align 4 Here?            isValidAccess - 1
-            isValidAccess - 2
-0
-            isValidAccess - 1
-            isValidAccess - 2
-     allBlocksValid - instruction?  store i32 %.0310, ptr %46, align 4 Here?            isValidAccess - 1
-            isValidAccess - 2
-0
-            isValidAccess - 1
-            isValidAccess - 2
-0 0
 [Bydebug]-62
-0 1
 [Bydebug]-63
 [Bydebug]-61
-判定
-Checking region:%39 => %36
-	ret1
-ret2
-ret3
-ret4
-ret5
-    allBlocksValid - 1
-    0
-  store i32 %.0310, ptr %46, align 4 Here?            isValidAccess - 1
-            isValidAccess - 2
-0
-            isValidAccess - 1
-            isValidAccess - 2
-     allBlocksValid - instruction?  store i32 %.0310, ptr %46, align 4 Here?            isValidAccess - 1
-            isValidAccess - 2
-0
-            isValidAccess - 1
-            isValidAccess - 2
-0 0
 [Bydebug]-62
-0 1
 [Bydebug]-63
 [Bydebug]-61
-判定
-Checking region:.temp.branch => %47
-	ret1
-ret2
-ret3
-ret4
-ret5
-    allBlocksValid - 1
-    0
-  %58 = load i32, ptr %57, align 4 Here?            isValidAccess - 1
-            isValidAccess - 2
-0
-            isValidAccess - 1
-            isValidAccess - 2
-     allBlocksValid - instruction?  %58 = load i32, ptr %57, align 4 Here?            isValidAccess - 1
-            isValidAccess - 2
-0
-            isValidAccess - 1
-            isValidAccess - 2
-0 0
 [Bydebug]-62
-0 1
 [Bydebug]-63
 [Bydebug]-64
 [Bydebug]-65
@@ -146,7 +80,8 @@ define hhvmcc { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64,
   br label %39
 
 17:                                               ; preds = %36
-  %18 = zext i32 %59 to i64
+  %.lcssa.lcssa.lcssa = phi i32 [ %.lcssa.lcssa, %36 ]
+  %18 = zext i32 %.lcssa.lcssa.lcssa to i64
   %19 = load i64, ptr %16, align 4
   %20 = getelementptr i64, ptr %15, i64 1
   %21 = ptrtoint ptr %20 to i64
@@ -167,42 +102,44 @@ define hhvmcc { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64,
   ret { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %35
 
 36:                                               ; preds = %47
+  %.lcssa.lcssa = phi i32 [ %.lcssa, %47 ]
   %37 = add nuw nsw i32 %.011, 1
-  %38 = icmp ugt i32 %.011, 8
+  %38 = icmp ugt i32 %37, 9
   br i1 %38, label %17, label %.preheader
 
 39:                                               ; preds = %.preheader, %47
   %.0310 = phi i32 [ 0, %.preheader ], [ %48, %47 ]
-  %40 = zext i32 %.011 to i64
-  %41 = mul nuw nsw i64 %40, 24000000
-  %42 = add nuw nsw i64 %41, 139916665430080
-  %43 = mul nuw nsw i64 %40, 12000
-  %44 = add nuw nsw i64 %42, %43
+  %40 = sext i32 %.011 to i64
+  %41 = mul nsw i64 %40, 24000000
+  %42 = add nsw i64 %41, 139916665430080
+  %43 = mul nsw i64 %40, 12000
+  %44 = add nsw i64 %42, %43
   %45 = inttoptr i64 %44 to ptr
   %46 = getelementptr i32, ptr %45, i64 %40
   store i32 %.0310, ptr %46, align 4
   br label %.temp.branch
 
 47:                                               ; preds = %.temp.branch
+  %.lcssa = phi i32 [ %59, %.temp.branch ]
   %48 = add nuw nsw i32 %.0310, 1
-  %49 = icmp ugt i32 %.0310, 18
+  %49 = icmp ugt i32 %48, 19
   br i1 %49, label %36, label %39
 
 .temp.branch:                                     ; preds = %39, %.temp.branch
   %.049 = phi i32 [ 0, %39 ], [ %60, %.temp.branch ]
   %50 = mul nuw nsw i32 %.0310, %.011
   %51 = mul nuw nsw i32 %50, %.049
-  %52 = zext i32 %.0310 to i64
-  %53 = mul nuw nsw i64 %52, 12000
-  %54 = add nuw nsw i64 %53, %42
-  %55 = zext i32 %.049 to i64
+  %52 = sext i32 %.0310 to i64
+  %53 = mul nsw i64 %52, 12000
+  %54 = add nsw i64 %53, %42
+  %55 = sext i32 %.049 to i64
   %56 = inttoptr i64 %54 to ptr
   %57 = getelementptr i32, ptr %56, i64 %55
   %58 = load i32, ptr %57, align 4
   %59 = add i32 %58, %51
   store i32 %59, ptr %57, align 4
   %60 = add nuw nsw i32 %.049, 1
-  %61 = icmp ugt i32 %.049, 28
+  %61 = icmp ugt i32 %60, 29
   br i1 %61, label %47, label %.temp.branch
 }
 
