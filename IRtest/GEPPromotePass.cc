@@ -1,4 +1,5 @@
 #include "GEPPromotePass.h"
+#include "ScopPass.h"
 #include <cassert>
 #include <llvm/ADT/ArrayRef.h>
 #include <llvm/ADT/DenseMap.h>
@@ -10,7 +11,9 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Dominators.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/InstrTypes.h>
+#include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IntrinsicInst.h>
 #include <llvm/IR/PassManager.h>
@@ -20,13 +23,21 @@
 #include <llvm/Analysis//IteratedDominanceFrontier.h>
 #include <llvm/Support/raw_ostream.h>
 #include <map>
+#include <vector>
 
 using namespace llvm;
+
+struct RestoreSI{
+  Value* val;
+  Value* ptr;
+  Instruction* loc;
+};
 
 static int NumSingelStoreGEP = 0;//NumSingleStore for GEP
 int NumPromoteGEP = 0;
 std::map<GetElementPtrInst*,Type*> GEPStoreType;
 std::vector<GetElementPtrInst*> LocalGEP;
+std::vector<struct RestoreSI> RestoreSIs;
 
 namespace{
 
@@ -211,6 +222,13 @@ bool GEPpromoteSingleBlock(GetElementPtrInst *GEP, const GEPInfo &Info,
                            DominatorTree &DT,
                            AssumptionCache *AC);
 void GEPupdateForIncomingValueLocation(PHINode *PN, DebugLoc DL,bool ApplyMergedLoc);
+void restoreGEPstore();
+
+void restoreGEPstore(){
+  for(auto &item:RestoreSIs){
+    StoreInst* newSI = new StoreInst(item.val,item.ptr,false,item.loc);
+  }
+}
 
 void GEPupdateForIncomingValueLocation(PHINode *PN, DebugLoc DL,bool ApplyMergedLoc) {
   if (ApplyMergedLoc)
@@ -372,8 +390,14 @@ NextIteration:
       DenseMap<GetElementPtrInst *, unsigned>::iterator gep = GEPLookup.find(Dest);
       if (gep == GEPLookup.end())
         continue;
-
+      //[By add]
       // what value were we writing?
+      RestoreSI newSI;
+      newSI.val=SI->getOperand(0);
+      newSI.ptr=gep->first;
+      newSI.loc=SI->getNextNode();
+      RestoreSIs.push_back(newSI);
+      
       unsigned GEPNo = gep->second;
       IncVals[GEPNo] = SI->getOperand(0);
       //TODO：这里涉及store指令的删除，可能根据后续需要进行修改
@@ -485,15 +509,15 @@ bool GEPpromoteSingleBlock(GetElementPtrInst *GEP, const GEPInfo &Info,
   }
 
   // Remove the (now dead) stores and alloca.alloc（GEP）不删除
-  while (!GEP->use_empty()) {
-    StoreInst *SI = cast<StoreInst>(GEP->user_back());
-    SI->eraseFromParent();
-    LBI.deleteValue(SI);
-  }
+//  while (!GEP->use_empty()) {
+//    StoreInst *SI = cast<StoreInst>(GEP->user_back());
+//    SI->eraseFromParent();
+//    LBI.deleteValue(SI);
+//  }
   //暂时不可以删除GEP
   //TODO
   //暂时删除GEP
-  GEP->eraseFromParent();//！！！暂时删除
+//  GEP->eraseFromParent();//！！！暂时删除
 
   return true;
 }
@@ -568,10 +592,10 @@ bool GEPrewriteSingleStore(GetElementPtrInst *GEP, GEPInfo &Info,
   // store以及GEP指令暂时不能够删除，留作后续分析
   //  暂时删除store指令，后续分析哪些应该保留，以及怎样保留
   //llvm::outs()<<*Info.OnlyStore<<"\n";
-  Info.OnlyStore->eraseFromParent();//！！暂时删除
-  LBI.deleteValue(Info.OnlyStore);//！！！暂时删除
+  //Info.OnlyStore->eraseFromParent();//！！暂时删除
+  //LBI.deleteValue(Info.OnlyStore);//！！！暂时删除
                                   //llvm::outs()<<*GEP<<"  I have problem\n";
-  GEP->eraseFromParent();//！！！！暂时删除
+  //GEP->eraseFromParent();//！！！！暂时删除
   return true;
 }
 
@@ -607,7 +631,7 @@ void GEPpromoteMem2Reg::run(){
     //因为在目前的优化下GEP仅剩第一次指令
     //不可删除，要用来做函数参数
     if(GEP->use_empty()){
-      GEP->eraseFromParent();//！！！暂时删除
+//      GEP->eraseFromParent();//！！！暂时删除
       RemoveFromGEPsList(GEPNum);
       ++NumPromoteGEP;
       continue;
@@ -709,7 +733,7 @@ void GEPpromoteMem2Reg::run(){
     if (!G->use_empty())
       G->replaceAllUsesWith(PoisonValue::get(G->getType()));
     //暂时不可以删除哈
-    G->eraseFromParent();
+  //    G->eraseFromParent();
     //++NumPromoteGEP;
   }
 
@@ -837,7 +861,6 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
         if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(I)){ // Use GEP
                                                                      // But there is a question "Is GEP's situation the same as alloc?"
           if(isGEPPromotable(GEP)){ 
-            llvm::outs()<<"push:"<<*GEP<<"\n";
             GEPs.push_back(GEP);
           }
         }
@@ -861,6 +884,7 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
     //break;//临时加的，后面记得删掉
 
   }
+  restoreGEPstore();
   return Changed;
 }
 
