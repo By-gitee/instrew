@@ -1,4 +1,13 @@
-[Bydebug]-1
+  %65 = getelementptr i32, ptr %64, i64 %63
+  %64 = inttoptr i64 %62 to ptr
+  %62 = add nuw nsw i64 %61, %49
+{{139916665430080,+,24000000}<nuw><nsw><%41>,+,12000}<nuw><nsw><%46>  %65 = getelementptr i32, ptr %64, i64 %63
+  %64 = inttoptr i64 %62 to ptr
+  %62 = add nuw nsw i64 %61, %49
+{{139916665430080,+,24000000}<nuw><nsw><%41>,+,12000}<nuw><nsw><%46>  %65 = getelementptr i32, ptr %64, i64 %63
+  %64 = inttoptr i64 %62 to ptr
+  %62 = add nuw nsw i64 %61, %49
+{{139916665430080,+,24000000}<nuw><nsw><%41>,+,12000}<nuw><nsw><%46>[Bydebug]-1
 [Bydebug]-2
 [Bydebug]-3
 [Bydebug]-4
@@ -54,9 +63,9 @@ ret5
 [Bydebug]-71 ValidRegions.size(): 0
 [Bydebug]-7 for
 [Bydebug]-71 ValidRegions.size(): 0
+[Bydebug]-72 ValidRegions.size(): 0
 [Bydebug]-7 for
 [Bydebug]-71 ValidRegions.size(): 0
-[Bydebug]-72 ValidRegions.size(): 0
 [Bydebug]-8
 [Bydebug]-8 ValidRegions.size(): 0
 [Bydebug]-9

@@ -50,6 +50,7 @@ executable(
   'IRtest',
   'IRtest.cc',
   'GEPPromotePass.cc',
+  'GEPRestorePass.cc',
   dependencies:[libllvm],
   include_directories: '/home/zby/dbt/env/include/polly',
   link_args: llvm_libs)

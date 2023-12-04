@@ -1,3 +1,4 @@
+#include "GEPRestorePass.h"
 #include "GEPPromotePass.h"
 #include "ScopDetection.h"
 #include "ScopInfo.h"
@@ -51,6 +52,7 @@
 #include <map>
 #include <vector>
 #include <set>
+
 /** Analysis tools **/
 std::string get_name(llvm::Value* value);
 
@@ -144,10 +146,11 @@ int main(int argc, char **argv){
   fpm.addPass(llvm::InstCombinePass());
   fpm.addPass(polly::CodePreparationPass());
 
-
+fpm.addPass(llvm::GEPRestorePass());
   fpm.addPass(polly::createFunctionToScopPassAdaptor(std::move(spm)));
 
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
+
   mpm.run(*Mod,mam);
 
   // Print the Module
