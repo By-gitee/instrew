@@ -2,25 +2,33 @@
 #include "ScopDetectionDiagnostic.h"
 #include "ScopInfo.h"
 #include <cassert>
+#include <llvm/ADT/ArrayRef.h>
+#include <llvm/ADT/BitmaskEnum.h>
 #include <llvm/ADT/iterator.h>
 #include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/PassManager.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
 #include <llvm/Support/Casting.h>
 #include <vector>
 #include <stack>
 using namespace llvm;
-
+//仅作分析，不进行处理
 struct RestoreGEP{
-  GetElementPtrInst* GEP = nullptr;
-  IntToPtrInst* ComputeITP= nullptr;
-  unsigned baseAddr = 0;
-  std::vector<unsigned> index;
-  RestoreGEP(GetElementPtrInst* gep, IntToPtrInst* ITP):GEP(gep),ComputeITP(ITP){};
+  GetElementPtrInst* GEP = nullptr;  //相关的GEP指令
+  IntToPtrInst* ComputeITP= nullptr; //相关inttoptr指令
+  ConstantInt* baseAddr = nullptr;   //数组基地址
+  unsigned bitWidth;          //元素大小
+  PHINode* PhiIndex = nullptr;       //最高一级索引对应的phi节点
+  std::vector<unsigned> index;       //获取到的维度大小
+  RestoreGEP(GetElementPtrInst* gep, IntToPtrInst* ITP,unsigned bitwidth):GEP(gep),ComputeITP(ITP),bitWidth(bitwidth){};
 };
 
 std::vector<RestoreGEP*> RestoreGEPs;
@@ -31,7 +39,7 @@ void analyzeAddrIndex(RestoreGEP* RG);
 void analyzeAddrIndex(RestoreGEP* RG){
   std::queue<Value*> values;
   values.push(RG->ComputeITP);
-  while(!values.empty()){
+  while(1){
     Value* I = values.front();
     values.pop();
 
@@ -46,25 +54,47 @@ void analyzeAddrIndex(RestoreGEP* RG){
         llvm::outs()<<*b<<"\n";
         assert("Wrong BinaryOperator Expr\n");
       }
-       bool isBase = (b->getOpcode()==BinaryOperator::Add)?true:false;
-       if(ConstantInt* cst = dyn_cast<ConstantInt>(b->getOperand(0))){
-         //存储值？貌似直接存储ConstantInt就行，修改baseAddr类型
-// TODO         RG->baseAddr = cst->getValue();
-       }
-       else{
-         values.push(b->getOperand(0));
-         continue;
-       }
-       //对mul也这么操作
-   }
+      bool isBase = (b->getOpcode()==BinaryOperator::Add)?true:false;
+
+      for(int i=0;i<b->getNumOperands();i++){
+        if(ConstantInt* cst = dyn_cast<ConstantInt>(b->getOperand(i))){
+          //存储值？貌似直接存储ConstantInt就行，修改baseAddr类型
+          if(isBase) {
+            RG->baseAddr = cst;
+            continue;
+          }
+          RG->index.push_back(cst->getZExtValue());
+        }
+        else{
+          values.push(b->getOperand(i));
+          EraseInsts.insert(dyn_cast<Instruction>(b->getOperand(i)));
+        }
+      }
+      continue;
+    }
     else if(ZExtInst* zt = dyn_cast<ZExtInst>(I)){
-      // 说明是末尾了，如果说这是最后一个也就是说size == 1？（再思考）
-      // 就直接读取它的最大取值范围作为数组最后一级的大小
+      if(values.empty()){
+        RG->PhiIndex = dyn_cast<PHINode>(zt->getOperand(0));
+        break;
+      }
     }
     else{
+      //只可能出现以上三种情况，如果出现其他情况，需要更新代码，或者说程序出现了错误
       llvm::outs()<<*I<<"\n";
       assert("Wrong Expr\n");
     }
+  }
+  //根据获取到的信息分析索引值
+  assert(RG->baseAddr!=nullptr && "baseAddr Analysis failed\n");
+  assert(!RG->index.empty() && "index Analysis failed\n");
+  assert(RG->PhiIndex != nullptr && "phi index analysis failed\n");
+  //整数类型
+  assert(RG->bitWidth%8==0);
+  unsigned ByteSize = RG->bitWidth/8;
+  assert(ByteSize != 0);
+  RG->index[0]/=ByteSize;
+  for(int i = 1;i<RG->index.size();i++){
+    RG->index[i]/=RG->index[i-1]*ByteSize;
   }
 }
 
@@ -77,30 +107,44 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
     Instruction* inst = &(*I);
     if(GetElementPtrInst* i = dyn_cast<GetElementPtrInst>(inst)){
       if(IntToPtrInst* pi = dyn_cast<IntToPtrInst>(I->getPrevNode())){
-        RestoreGEP newRestoreGEP(i,pi);
-        RestoreGEPs.push_back(&newRestoreGEP);
+        if(dyn_cast<BinaryOperator>(pi->getOperand(0))){
+          RestoreGEP* newRestoreGEP= new RestoreGEP(i,pi,i->getResultElementType()->getIntegerBitWidth());
+          RestoreGEPs.push_back(newRestoreGEP);
+        }
       }
     }
     I++;
   }
-  for(auto &item: RestoreGEPs){
+
+  for(auto item: RestoreGEPs){
     GetElementPtrInst* GEP = item->GEP;
     IntToPtrInst* ITP = item->ComputeITP;
     EraseInsts.insert(GEP);
     EraseInsts.insert(ITP);
     analyzeAddrIndex(item);
-    //    llvm::outs()<<*item->ComputeITP->getOperand(0)<<"\n";
-    //    const SCEV* scev = SE.getSCEV(item->ComputeITP->getOperand(0));
-    //    scev->print(llvm::outs());
+    //获取最高级索引
+    const SCEV* scev = SE.getSCEV(item->PhiIndex);
+    item->index.push_back(SE.getUnsignedRangeMax(scev).getZExtValue()+1);
+    //插入构建好的GEP指令
+    ConstantInt
+    ArrayRef<Value*> IdxList(item->index);
+    //GetElementPtrInst::Create(GEP->getPointerOperandType(),item->baseAddr,)
+//TODO
+    //    GEP->replaceAllUsesWith();
+/**
+    llvm::outs()<<"GEP result:"<<*item->baseAddr;
+      llvm::outs()<<item->index.size();
+      for(auto i: item->index){
+      llvm::outs()<<'['<<i<<']';
+      }
+      llvm::outs()<<"\n";
+**/
   }
-  /** 
-    llvm::outs()<<*i<<"\n";
-    const SCEV* scev = SE.getSCEV(i);  
-    scev->print(llvm::outs());
-    llvm::outs()<<" max:"<<SE.getUnsignedRangeMax(scev)<<"\n";
-    llvm::outs()<<" here:"<<*i->getOperand(0);
-    llvm::outs()<<"\n";
-   **/
+  //删除原有的指令
+  for(auto item: RestoreGEPs){
+    delete item;
+  }
+
   return PreservedAnalyses::none();
 }
 
