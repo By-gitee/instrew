@@ -146,7 +146,7 @@ int main(int argc, char **argv){
   fpm.addPass(llvm::InstCombinePass());
   fpm.addPass(polly::CodePreparationPass());
 
-fpm.addPass(llvm::GEPRestorePass());
+  fpm.addPass(llvm::GEPRestorePass());
   fpm.addPass(polly::createFunctionToScopPassAdaptor(std::move(spm)));
 
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
