@@ -1,4 +1,5 @@
 #include "llvm/IR/PassManager.h"
+#include <llvm/IR/GlobalVariable.h>
 
 namespace llvm{
 

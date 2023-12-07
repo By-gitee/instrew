@@ -1,7 +1,13 @@
+#include "CodeGen/CodeGeneration.h"
+#include "DeLICM.h"
+#include "ForwardOpTree.h"
 #include "GEPRestorePass.h"
 #include "GEPPromotePass.h"
+#include "PruneUnprofitable.h"
+#include "ScheduleOptimizer.h"
 #include "ScopDetection.h"
 #include "ScopInfo.h"
+#include "Simplify.h"
 #include <cstdio>
 #include <fstream>
 #include <ios>
@@ -15,6 +21,7 @@
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
@@ -53,6 +60,7 @@
 #include <vector>
 #include <set>
 
+
 /** Analysis tools **/
 std::string get_name(llvm::Value* value);
 
@@ -60,6 +68,7 @@ void testInst(llvm::Module *Mod);
 void PrintInstDFG(llvm::Instruction* Inst, std::fstream& file);
 void PrintFunctionPHIDFG(llvm::Function* Func, std::fstream& file);
 void PrintModulePHIDFG(llvm::Module* Mod, std::fstream& file); 
+
 
 
 /**Transform tools**/
@@ -144,11 +153,19 @@ int main(int argc, char **argv){
   }
 
   fpm.addPass(llvm::InstCombinePass());
+  fpm.addPass(llvm::GEPRestorePass());
   fpm.addPass(polly::CodePreparationPass());
 
-  fpm.addPass(llvm::GEPRestorePass());
-  fpm.addPass(polly::createFunctionToScopPassAdaptor(std::move(spm)));
+  spm.addPass(polly::SimplifyPass(0));                 // 1
+  spm.addPass(polly::ForwardOpTreePass());             // 2
+  spm.addPass(polly::DeLICMPass());                    // 3
+  spm.addPass(polly::SimplifyPass(1));                 // 4  
+  spm.addPass(polly::PruneUnprofitablePass());         // 5 
+  spm.addPass(polly::IslScheduleOptimizerPass());      // 6
 
+  spm.addPass(polly::CodeGenerationPass());
+
+  //fpm.addPass(polly::createFunctionToScopPassAdaptor(std::move(spm)));
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
 
   mpm.run(*Mod,mam);
@@ -157,7 +174,7 @@ int main(int argc, char **argv){
   Mod->print(llvm::outs(),nullptr);
   //testInst(&(*Mod));
   Mod.reset();
-
+  
   return 0;
 }
 

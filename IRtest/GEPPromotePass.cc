@@ -1,5 +1,6 @@
 #include "GEPPromotePass.h"
 #include "ScopPass.h"
+#include <asm-generic/errno-base.h>
 #include <cassert>
 #include <llvm/ADT/ArrayRef.h>
 #include <llvm/ADT/DenseMap.h>
@@ -8,6 +9,7 @@
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/Analysis/AliasAnalysis.h>
 #include <llvm/Analysis/AssumptionCache.h>
+#include <llvm/Analysis/ScalarEvolution.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Dominators.h>
 #include <llvm/IR/Function.h>
@@ -16,6 +18,7 @@
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IntrinsicInst.h>
+#include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/PassManager.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Analysis/ValueTracking.h>
@@ -38,6 +41,7 @@ int NumPromoteGEP = 0;
 std::map<GetElementPtrInst*,Type*> GEPStoreType;
 std::vector<GetElementPtrInst*> LocalGEP;
 std::vector<struct RestoreSI> RestoreSIs;
+BasicBlock* ExitBlock;
 
 namespace{
 
@@ -210,7 +214,7 @@ private:
 
 void analyzeLocalGEP(Function &F);
 bool isGEPPromotable(const GetElementPtrInst* GEP);
-bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT,AssumptionCache &AC);//还挺难的，需要进一步看代码实现过程
+bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT,AssumptionCache &AC,ScalarEvolution &SE);
 void GEPpromoteMemToReg(ArrayRef<GetElementPtrInst*> GEPs,DominatorTree &DT,AssumptionCache *AC);
 bool GEPrewriteSingleStore(GetElementPtrInst *GEP, GEPInfo &Info,
                            LargeBlockInfo &LBI, const DataLayout &DL,
@@ -222,12 +226,13 @@ bool GEPpromoteSingleBlock(GetElementPtrInst *GEP, const GEPInfo &Info,
                            DominatorTree &DT,
                            AssumptionCache *AC);
 void GEPupdateForIncomingValueLocation(PHINode *PN, DebugLoc DL,bool ApplyMergedLoc);
-void restoreGEPstore();
+void restoreGEPstore(ScalarEvolution &SE);
 
-void restoreGEPstore(){
+void restoreGEPstore(ScalarEvolution &SE){
   for(auto &item:RestoreSIs){
-    StoreInst* newSI = new StoreInst(item.val,item.ptr,false,item.loc);
-  }
+    if(dyn_cast<Constant>(item.val)) continue;
+    StoreInst* newSI = new StoreInst(item.val,item.ptr,false,&ExitBlock->front());
+}
 }
 
 void GEPupdateForIncomingValueLocation(PHINode *PN, DebugLoc DL,bool ApplyMergedLoc) {
@@ -397,7 +402,7 @@ NextIteration:
       newSI.ptr=gep->first;
       newSI.loc=SI->getNextNode();
       RestoreSIs.push_back(newSI);
-      
+
       unsigned GEPNo = gep->second;
       IncVals[GEPNo] = SI->getOperand(0);
       //TODO：这里涉及store指令的删除，可能根据后续需要进行修改
@@ -509,15 +514,15 @@ bool GEPpromoteSingleBlock(GetElementPtrInst *GEP, const GEPInfo &Info,
   }
 
   // Remove the (now dead) stores and alloca.alloc（GEP）不删除
-//  while (!GEP->use_empty()) {
-//    StoreInst *SI = cast<StoreInst>(GEP->user_back());
-//    SI->eraseFromParent();
-//    LBI.deleteValue(SI);
-//  }
+    while (!GEP->use_empty()) {
+      StoreInst *SI = cast<StoreInst>(GEP->user_back());
+      SI->eraseFromParent();
+      LBI.deleteValue(SI);
+    }
   //暂时不可以删除GEP
   //TODO
   //暂时删除GEP
-//  GEP->eraseFromParent();//！！！暂时删除
+   GEP->eraseFromParent();//！！！暂时删除
 
   return true;
 }
@@ -592,17 +597,18 @@ bool GEPrewriteSingleStore(GetElementPtrInst *GEP, GEPInfo &Info,
   // store以及GEP指令暂时不能够删除，留作后续分析
   //  暂时删除store指令，后续分析哪些应该保留，以及怎样保留
   //llvm::outs()<<*Info.OnlyStore<<"\n";
-  //Info.OnlyStore->eraseFromParent();//！！暂时删除
-  //LBI.deleteValue(Info.OnlyStore);//！！！暂时删除
-                                  //llvm::outs()<<*GEP<<"  I have problem\n";
-  //GEP->eraseFromParent();//！！！！暂时删除
+    Info.OnlyStore->eraseFromParent();//！！暂时删除
+    LBI.deleteValue(Info.OnlyStore);//！！！暂时删除
+  //llvm::outs()<<*GEP<<"  I have problem\n";
+    GEP->eraseFromParent();//！！！！暂时删除
   return true;
 }
 
 PreservedAnalyses GEPPromotePass::run(Function &F,FunctionAnalysisManager &AM){
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
   auto &AC = AM.getResult<AssumptionAnalysis>(F);
-  if(!GEPpromoteMemToRegister(F,DT,AC)){
+  auto &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
+  if(!GEPpromoteMemToRegister(F,DT,AC,SE)){
     return PreservedAnalyses::all();
   }
 
@@ -631,7 +637,7 @@ void GEPpromoteMem2Reg::run(){
     //因为在目前的优化下GEP仅剩第一次指令
     //不可删除，要用来做函数参数
     if(GEP->use_empty()){
-//      GEP->eraseFromParent();//！！！暂时删除
+        GEP->eraseFromParent();//！！！暂时删除
       RemoveFromGEPsList(GEPNum);
       ++NumPromoteGEP;
       continue;
@@ -733,11 +739,11 @@ void GEPpromoteMem2Reg::run(){
     if (!G->use_empty())
       G->replaceAllUsesWith(PoisonValue::get(G->getType()));
     //暂时不可以删除哈
-  //    G->eraseFromParent();
+    G->eraseFromParent();
     //++NumPromoteGEP;
   }
 
-  
+
   //TODO
   // Loop over all of the PHI nodes and see if there are any that we can get
   // rid of because they merge all of the same incoming values.  This can
@@ -745,28 +751,28 @@ void GEPpromoteMem2Reg::run(){
   // iterative, because eliminating one PHI node can cause others to be removed.
   bool EliminatedAPHI = true;
   while (EliminatedAPHI) {
-  EliminatedAPHI = false;
+    EliminatedAPHI = false;
 
-  // Iterating over NewPhiNodes is deterministic, so it is safe to try to
-  // simplify and RAUW them as we go.  If it was not, we could add uses to
-  // the values we replace with in a non-deterministic order, thus creating
-  // non-deterministic def->use chains.
-  for (DenseMap<std::pair<unsigned, unsigned>, PHINode *>::iterator
-  I = NewPhiNodes.begin(),
-  E = NewPhiNodes.end();
-  I != E;) {
-  PHINode *PN = I->second;
+    // Iterating over NewPhiNodes is deterministic, so it is safe to try to
+    // simplify and RAUW them as we go.  If it was not, we could add uses to
+    // the values we replace with in a non-deterministic order, thus creating
+    // non-deterministic def->use chains.
+    for (DenseMap<std::pair<unsigned, unsigned>, PHINode *>::iterator
+         I = NewPhiNodes.begin(),
+         E = NewPhiNodes.end();
+         I != E;) {
+      PHINode *PN = I->second;
 
-  // If this PHI node merges one value and/or undefs, get the value.
-  if (Value *V = simplifyInstruction(PN, SQ)) {
-  PN->replaceAllUsesWith(V);
-  PN->eraseFromParent();
-  NewPhiNodes.erase(I++);
-  EliminatedAPHI = true;
-  continue;
-  }
-  ++I;
-  }
+      // If this PHI node merges one value and/or undefs, get the value.
+      if (Value *V = simplifyInstruction(PN, SQ)) {
+        PN->replaceAllUsesWith(V);
+        PN->eraseFromParent();
+        NewPhiNodes.erase(I++);
+        EliminatedAPHI = true;
+        continue;
+      }
+      ++I;
+    }
   }
 
   // At this point, the renamer has added entries to PHI nodes for all reachable
@@ -775,62 +781,62 @@ void GEPpromoteMem2Reg::run(){
   // have incoming values for all predecessors.  Loop over all PHI nodes we have
   // created, inserting undef values if they are missing any incoming values.
   for (DenseMap<std::pair<unsigned, unsigned>, PHINode *>::iterator
-  I = NewPhiNodes.begin(),
-  E = NewPhiNodes.end();
-  I != E; ++I) {
-  // We want to do this once per basic block.  As such, only process a block
-  // when we find the PHI that is the first entry in the block.
-  PHINode *SomePHI = I->second;
-  BasicBlock *BB = SomePHI->getParent();
-  if (&BB->front() != SomePHI)
-  continue;
+       I = NewPhiNodes.begin(),
+       E = NewPhiNodes.end();
+       I != E; ++I) {
+    // We want to do this once per basic block.  As such, only process a block
+    // when we find the PHI that is the first entry in the block.
+    PHINode *SomePHI = I->second;
+    BasicBlock *BB = SomePHI->getParent();
+    if (&BB->front() != SomePHI)
+      continue;
 
-  // Only do work here if there the PHI nodes are missing incoming values.  We
-  // know that all PHI nodes that were inserted in a block will have the same
-  // number of incoming values, so we can just check any of them.
-  if (SomePHI->getNumIncomingValues() == getNumPreds(BB))
-  continue;
+    // Only do work here if there the PHI nodes are missing incoming values.  We
+    // know that all PHI nodes that were inserted in a block will have the same
+    // number of incoming values, so we can just check any of them.
+    if (SomePHI->getNumIncomingValues() == getNumPreds(BB))
+      continue;
 
-  // Get the preds for BB.
-  SmallVector<BasicBlock *, 16> Preds(predecessors(BB));
+    // Get the preds for BB.
+    SmallVector<BasicBlock *, 16> Preds(predecessors(BB));
 
-  // Ok, now we know that all of the PHI nodes are missing entries for some
-  // basic blocks.  Start by sorting the incoming predecessors for efficient
-  // access.
-  auto CompareBBNumbers = [this](BasicBlock *A, BasicBlock *B) {
-  return BBNumbers.find(A)->second < BBNumbers.find(B)->second;
-  };
-  llvm::sort(Preds, CompareBBNumbers);
+    // Ok, now we know that all of the PHI nodes are missing entries for some
+    // basic blocks.  Start by sorting the incoming predecessors for efficient
+    // access.
+    auto CompareBBNumbers = [this](BasicBlock *A, BasicBlock *B) {
+      return BBNumbers.find(A)->second < BBNumbers.find(B)->second;
+    };
+    llvm::sort(Preds, CompareBBNumbers);
 
-  // Now we loop through all BB's which have entries in SomePHI and remove
-  // them from the Preds list.
-  for (unsigned i = 0, e = SomePHI->getNumIncomingValues(); i != e; ++i) {
-  // Do a log(n) search of the Preds list for the entry we want.
-  SmallVectorImpl<BasicBlock *>::iterator EntIt = llvm::lower_bound(
-  Preds, SomePHI->getIncomingBlock(i), CompareBBNumbers);
-  assert(EntIt != Preds.end() && *EntIt == SomePHI->getIncomingBlock(i) &&
-         "PHI node has entry for a block which is not a predecessor!");
+    // Now we loop through all BB's which have entries in SomePHI and remove
+    // them from the Preds list.
+    for (unsigned i = 0, e = SomePHI->getNumIncomingValues(); i != e; ++i) {
+      // Do a log(n) search of the Preds list for the entry we want.
+      SmallVectorImpl<BasicBlock *>::iterator EntIt = llvm::lower_bound(
+                                                                        Preds, SomePHI->getIncomingBlock(i), CompareBBNumbers);
+      assert(EntIt != Preds.end() && *EntIt == SomePHI->getIncomingBlock(i) &&
+             "PHI node has entry for a block which is not a predecessor!");
 
-  // Remove the entry
-  Preds.erase(EntIt);
-}
+      // Remove the entry
+      Preds.erase(EntIt);
+    }
 
-// At this point, the blocks left in the preds list must have dummy
-// entries inserted into every PHI nodes for the block.  Update all the phi
-// nodes in this block that we are inserting (there could be phis before
-// mem2reg runs).
-unsigned NumBadPreds = SomePHI->getNumIncomingValues();
-BasicBlock::iterator BBI = BB->begin();
-while ((SomePHI = dyn_cast<PHINode>(BBI++)) &&
-       SomePHI->getNumIncomingValues() == NumBadPreds) {
-  Value *UndefVal = UndefValue::get(SomePHI->getType());
-  for (BasicBlock *Pred : Preds)
-    SomePHI->addIncoming(UndefVal, Pred);
-}
-}
+    // At this point, the blocks left in the preds list must have dummy
+    // entries inserted into every PHI nodes for the block.  Update all the phi
+    // nodes in this block that we are inserting (there could be phis before
+    // mem2reg runs).
+    unsigned NumBadPreds = SomePHI->getNumIncomingValues();
+    BasicBlock::iterator BBI = BB->begin();
+    while ((SomePHI = dyn_cast<PHINode>(BBI++)) &&
+           SomePHI->getNumIncomingValues() == NumBadPreds) {
+      Value *UndefVal = UndefValue::get(SomePHI->getType());
+      for (BasicBlock *Pred : Preds)
+        SomePHI->addIncoming(UndefVal, Pred);
+    }
+  }
 
 
-NewPhiNodes.clear();
+  NewPhiNodes.clear();
 }
 
 void GEPpromoteMemToReg(ArrayRef<GetElementPtrInst*> GEPs, DominatorTree &DT, AssumptionCache *AC){
@@ -849,7 +855,7 @@ bool isLocalGEP(const GetElementPtrInst *GEP){
   return false;
 }
 
-bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC){
+bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC,ScalarEvolution &SE){
   std::vector<GetElementPtrInst*> GEPs;
   bool Changed = false;
   // alloc只在入口块中含有，但是GEP并不是，所以需要遍历所有的基本快
@@ -857,12 +863,15 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
     while(true){
       GEPs.clear();
 
-      for(BasicBlock::iterator I=BB.begin(),E=--BB.end();I!=E;++I){
+      for(BasicBlock::iterator I=BB.begin(),E=BB.end();I!=E;++I){
         if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(I)){ // Use GEP
                                                                      // But there is a question "Is GEP's situation the same as alloc?"
           if(isGEPPromotable(GEP)){ 
             GEPs.push_back(GEP);
           }
+        }
+        else if(llvm::ReturnInst* RET = dyn_cast<ReturnInst>(I)){
+          ExitBlock = &BB;
         }
       }
       //llvm::outs()<<" NumPromoteGEP:"<<NumPromoteGEP<<" GEPs.size():"<<GEPs.size()<<"\n";
@@ -884,7 +893,7 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
     //break;//临时加的，后面记得删掉
 
   }
-  restoreGEPstore();
+  //restoreGEPstore(SE);
   return Changed;
 }
 

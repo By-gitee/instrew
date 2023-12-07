@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <llvm/ADT/ArrayRef.h>
 #include <llvm/ADT/BitmaskEnum.h>
+#include <llvm/ADT/StringExtras.h>
 #include <llvm/ADT/iterator.h>
 #include <llvm/Analysis/ScalarEvolution.h>
 #include <llvm/IR/Constants.h>
@@ -16,12 +17,14 @@
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Metadata.h>
 #include <llvm/IR/PassManager.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Value.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/TypeSize.h>
 #include <vector>
+#include <string>
 #include <stack>
 using namespace llvm;
 
@@ -36,11 +39,11 @@ struct RestoreGEP{
 };
 
 std::vector<RestoreGEP*> RestoreGEPs;
+std::map<ConstantInt*,GlobalVariable*> AddrGV;
 std::set<Instruction*> EraseInsts;
 
 void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE);
 void insertNewGEP(RestoreGEP *RG, LLVMContext &Ctx);
-
 
 void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
   //构建GEP数组类型
@@ -78,11 +81,27 @@ void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
   }
 
   //创建全局指针变量
-  GlobalVariable arrayBase(Type::getInt64Ty(Ctx),true,GlobalValue::LinkageTypes::ExternalLinkage);
-  //TODO : 插入不进去啊
-  // RG->GEP->getParent()->getParent()->getParent()->getGlobalList().push_back(&arrayBase);
-//  arrayBase.setInitializer(RG->baseAddr);
-  //  llvm::outs()<<arrayBase<<"\n";
+  if(AddrGV.count(RG->baseAddr)==0){
+  GlobalVariable* arrayBase= new GlobalVariable(*(RG->GEP->getParent()->getParent()->getParent()),Type::getInt64Ty(Ctx),false,GlobalVariable::LinkageTypes::ExternalLinkage,RG->baseAddr);
+  std::string arrName = "arr" + itostr(AddrGV.size());
+  arrayBase->setName(arrName);
+  AddrGV[RG->baseAddr] = arrayBase;
+  }
+
+  //根据指针、索引、类型插入GEP指令
+  //而且需要replace
+  std::vector<Value*> GEPindex;
+  GEPindex.push_back(ConstantInt::get(Type::getInt64Ty(Ctx),0));
+  for(int i=0;i<RG->index.size();i++){
+    GEPindex.push_back(RG->index[i]);
+  }
+  ArrayRef<Value*> idXList(GEPindex);
+
+  //创建新的GEP
+  GetElementPtrInst* newGEP = GetElementPtrInst::CreateInBounds(ty,AddrGV[RG->baseAddr],idXList,"",RG->GEP);
+
+  //更换之前GEP所有的Use
+  RG->GEP->replaceAllUsesWith(newGEP);
 }
 
 void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
@@ -111,7 +130,6 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
       //判断oprand是否是常数，如果是不用push，记录到index或者baseAddr中
       //如果不是，就需要push到队列里面，根据不同的计算类型来判断是基地址还是偏移量
       if(b->getOpcode()!=BinaryOperator::Add && b->getOpcode()!=BinaryOperator::Mul){
-        llvm::outs()<<*b<<"\n";
         assert("Wrong BinaryOperator Expr\n");
       }
       bool isBase = (b->getOpcode()==BinaryOperator::Add)?true:false;
@@ -127,8 +145,8 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
         }
         else{
           values.push(b->getOperand(i));
-          EraseInsts.insert(dyn_cast<Instruction>(b->getOperand(i)));
         }
+          EraseInsts.insert(b);
       }
       continue;
     }
@@ -139,10 +157,10 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
         RG->index.push_back(Phi);
         break;
       }
+      RG->index.push_back(zt->getOperand(0));
     }
     else{
       //只可能出现以上三种情况，如果出现其他情况，需要更新代码，或者说程序出现了错误
-      llvm::outs()<<*I<<"\n";
       assert("Wrong Expr\n");
     }
   }
@@ -152,7 +170,7 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
   assert(RG->baseAddr!=nullptr && "baseAddr Analysis failed\n");
   assert(!RG->dimSize.empty() && "index Analysis failed\n");
   assert(!RG->index.empty() && "phi index analysis failed\n");
-  assert(RG->dimSize.size()==RG->index.size() && "Unmatch index & dimSize size");
+  assert(RG->dimSize.size()+1==RG->index.size() && "Unmatch index & dimSize size");
 
   //目前只有整数部分可以进行分析
   if(RG->elementType->getTypeID()==Type::TypeID::IntegerTyID){
@@ -177,6 +195,7 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
     //FIXME:实现其他元素类型
     assert("Unsupported Element Type\n");
   }
+
 }
 
 
@@ -221,7 +240,10 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
     //    GEP->replaceAllUsesWith();
 
   }
-  //删除原有的指令
+  //删除原有冗余的指令
+  for(auto &inst:EraseInsts){
+    inst->eraseFromParent();
+  }
   for(auto item: RestoreGEPs){
     delete item;
   }
