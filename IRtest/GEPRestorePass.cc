@@ -8,6 +8,7 @@
 #include <llvm/ADT/StringExtras.h>
 #include <llvm/ADT/iterator.h>
 #include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
@@ -41,6 +42,7 @@ struct RestoreGEP{
 std::vector<RestoreGEP*> RestoreGEPs;
 std::map<ConstantInt*,GlobalVariable*> AddrGV;
 std::set<Instruction*> EraseInsts;
+std::vector<InsertValueInst*> InsertValInsts; 
 
 void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE);
 void insertNewGEP(RestoreGEP *RG, LLVMContext &Ctx);
@@ -92,7 +94,7 @@ void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
   //而且需要replace
   std::vector<Value*> GEPindex;
   GEPindex.push_back(ConstantInt::get(Type::getInt64Ty(Ctx),0));
-  for(int i=0;i<RG->index.size();i++){
+  for(int i=RG->index.size()-1;i>=0;i--){
     GEPindex.push_back(RG->index[i]);
   }
   ArrayRef<Value*> idXList(GEPindex);
@@ -116,7 +118,7 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
   PHINode* phi = dyn_cast<PHINode>(zext->getOperand(0));
   assert(phi!=nullptr && "Not Phi");
   
-  RG->index.push_back(phi);
+  RG->index.push_back(zext);
 
   while(1){
     Value* I = values.front();
@@ -154,10 +156,10 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
       if(values.empty()){
         PHINode* Phi = dyn_cast<PHINode>(zt->getOperand(0));
         assert(Phi!=nullptr && "Not Phi");
-        RG->index.push_back(Phi);
+        RG->index.push_back(zt);
         break;
       }
-      RG->index.push_back(zt->getOperand(0));
+      RG->index.push_back(zt);
     }
     else{
       //只可能出现以上三种情况，如果出现其他情况，需要更新代码，或者说程序出现了错误
@@ -213,6 +215,9 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
         }
       }
     }
+    else if(InsertValueInst* iv = dyn_cast<InsertValueInst>(inst)){
+      InsertValInsts.push_back(iv);
+    }
     I++;
   }
 
@@ -240,14 +245,37 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
     //    GEP->replaceAllUsesWith();
 
   }
-  //删除原有冗余的指令
+  // 恢复非参数最终的返回指令
+  for(InsertValueInst* iv : InsertValInsts){
+   llvm::outs()<<"=="<<*iv->getOperand(1)<<"\n";
+   Value* operand = iv->getOperand(1);
+   Instruction* i=dyn_cast<Instruction>(iv);
+   if(i==nullptr)continue;
+   
+   std::queue<Instruction*> insts;
+   insts.push(i);
+   while(!insts.empty()){
+     Instruction* inst = insts.front();
+     insts.pop();
+     
+     unsigned int op = inst->getOpcode();
+     if(op==Instruction::Load){
+       continue;
+     }
+     else if(i->getNumOperands()==1){
+//TODO
+     }
+   }
+  }
+
+  // 删除原有冗余的指令
   for(auto &inst:EraseInsts){
     inst->eraseFromParent();
   }
   for(auto item: RestoreGEPs){
     delete item;
   }
-
+  
   return PreservedAnalyses::none();
 }
 

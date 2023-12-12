@@ -499,16 +499,20 @@ define hhvmcc { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64,
 
 attributes #0 = { mustprogress noinline norecurse nounwind optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 
-!llvm.module.flags = !{!0, !1, !2, !3, !4}
-!llvm.ident = !{!5}
+!llvm.module.flags = !{!0, !1, !2, !3}
+!llvm.ident = !{!4}
 
 !0 = !{i32 1, !"wchar_size", i32 4}
 !1 = !{i32 7, !"PIC Level", i32 2}
 !2 = !{i32 7, !"PIE Level", i32 2}
-!3 = !{i32 7, !"uwtable", i32 2}
-!4 = !{i32 7, !"frame-pointer", i32 2}
-!5 = !{!"clang version 15.0.7 (https://github.com/llvm/llvm-project.git 8dfdcc7b7bf66834a761bd8de445840ef68e4d1a)"}
-!6 = distinct !{!6, !7}
-!7 = !{!"llvm.loop.mustprogress"}
-!8 = distinct !{!8, !7}
-!9 = distinct !{!9, !7}
+!3 = !{i32 7, !"uwtable", i32 1}
+!4 = !{!"Ubuntu clang version 14.0.0-1ubuntu1"}
+!5 = !{!6, !6, i64 0}
+!6 = !{!"int", !7, i64 0}
+!7 = !{!"omnipotent char", !8, i64 0}
+!8 = !{!"Simple C++ TBAA"}
+!9 = distinct !{!9, !10, !11}
+!10 = !{!"llvm.loop.mustprogress"}
+!11 = !{!"llvm.loop.unroll.disable"}
+!12 = distinct !{!12, !10, !11}
+!13 = distinct !{!13, !10, !11}

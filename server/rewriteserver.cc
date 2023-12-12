@@ -452,9 +452,9 @@ private:
 public:
     void Translate(uintptr_t addr) {
         // [By add]
-        // printf("addr:%#X\n",addr);
+        printf("addr:%#X\n",addr);
         bool isKernelFunc = false;
-        if(addr-preAddr == 0xBA1D3130 - 0xB8E71D44){
+        if(addr-preAddr == 0xAAF30130 - 0xA9BCDD44){
           isKernelFunc = true;
         }
         preAddr = addr;
@@ -486,9 +486,9 @@ public:
         }
         if (instrew_cfg.dumpir & 1)
             mod->print(llvm::errs(), nullptr);
-        //if(isKernelFunc){
-        //  mod->print(llvm::errs(),nullptr);
-        //}
+        if(isKernelFunc){
+          mod->print(llvm::errs(),nullptr);
+        }
 
         auto time_instrument_start = std::chrono::steady_clock::now();
         fn = tool.Instrument(fn);

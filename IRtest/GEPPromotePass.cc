@@ -514,15 +514,15 @@ bool GEPpromoteSingleBlock(GetElementPtrInst *GEP, const GEPInfo &Info,
   }
 
   // Remove the (now dead) stores and alloca.alloc（GEP）不删除
-    while (!GEP->use_empty()) {
-      StoreInst *SI = cast<StoreInst>(GEP->user_back());
-      SI->eraseFromParent();
-      LBI.deleteValue(SI);
-    }
+  //  while (!GEP->use_empty()) {
+  //    StoreInst *SI = cast<StoreInst>(GEP->user_back());
+  //    SI->eraseFromParent();
+  //    LBI.deleteValue(SI);
+  //  }
   //暂时不可以删除GEP
   //TODO
   //暂时删除GEP
-   GEP->eraseFromParent();//！！！暂时删除
+  // GEP->eraseFromParent();//！！！暂时删除
 
   return true;
 }
@@ -597,10 +597,10 @@ bool GEPrewriteSingleStore(GetElementPtrInst *GEP, GEPInfo &Info,
   // store以及GEP指令暂时不能够删除，留作后续分析
   //  暂时删除store指令，后续分析哪些应该保留，以及怎样保留
   //llvm::outs()<<*Info.OnlyStore<<"\n";
-    Info.OnlyStore->eraseFromParent();//！！暂时删除
-    LBI.deleteValue(Info.OnlyStore);//！！！暂时删除
+  //  Info.OnlyStore->eraseFromParent();//！！暂时删除
+  //  LBI.deleteValue(Info.OnlyStore);//！！！暂时删除
   //llvm::outs()<<*GEP<<"  I have problem\n";
-    GEP->eraseFromParent();//！！！！暂时删除
+  //  GEP->eraseFromParent();//！！！！暂时删除
   return true;
 }
 
@@ -637,7 +637,7 @@ void GEPpromoteMem2Reg::run(){
     //因为在目前的优化下GEP仅剩第一次指令
     //不可删除，要用来做函数参数
     if(GEP->use_empty()){
-        GEP->eraseFromParent();//！！！暂时删除
+//        GEP->eraseFromParent();//！！！暂时删除
       RemoveFromGEPsList(GEPNum);
       ++NumPromoteGEP;
       continue;
@@ -739,7 +739,7 @@ void GEPpromoteMem2Reg::run(){
     if (!G->use_empty())
       G->replaceAllUsesWith(PoisonValue::get(G->getType()));
     //暂时不可以删除哈
-    G->eraseFromParent();
+  //  G->eraseFromParent();
     //++NumPromoteGEP;
   }
 
@@ -893,7 +893,7 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
     //break;//临时加的，后面记得删掉
 
   }
-  //restoreGEPstore(SE);
+  restoreGEPstore(SE);
   return Changed;
 }
 
