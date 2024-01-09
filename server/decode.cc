@@ -14,13 +14,20 @@ DecodeResult DecodeX86_64(uintptr_t addr, size_t bufsz, const uint8_t* buf) {
         return res;
 
     res.size = ret;
-   
+    if( (addr & 0xfff) == 0x130){
     std::cout<<"Inst MC:";
     for(int _i=0;_i<15;_i++){
       std::cout<<std::hex<<((*((uint16_t*)&(buf[_i])))&0xff)<<" ";
     }
     std::cout<<std::endl;
-  
+    }
+    /**  
+    std::cout<<"Inst MC:";
+    for(int _i=0;_i<15;_i++){
+      std::cout<<std::hex<<((*((uint16_t*)&(buf[_i])))&0xff)<<" ";
+    }
+    std::cout<<std::endl;
+  **/
 //    std::cout<<"  --type:"<<FD_TYPE(&fd)<<std::endl;
 
     switch (FD_TYPE(&fd)) {

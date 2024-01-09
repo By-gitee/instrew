@@ -6,8 +6,21 @@
 #if defined(__x86_64__)
 #include <asm/prctl.h>
 #endif
+#if defined(__x86_64__)
+extern void _init(void) {
+  __asm__ volatile(
+                   "sub $0x8,%rsp\n\t"
+                   "mov 0x0(%rip),%rax\n\t"
+                   "call *%rax\n\t"
+                  );
+  }
+extern void _fini(void){
+  __asm__ volatile(
+                   "sub $0x8,%rsp\n\t"
+                  );
 
-
+}
+#endif
 extern int main(int argc, char** argv);
 void __start_main(const size_t* initial_stack, const size_t* dynv);
 void __restore(void);

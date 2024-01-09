@@ -18,8 +18,12 @@
 #include <llvm/Analysis/LoopInfo.h>
 #include <llvm/Analysis/OptimizationRemarkEmitter.h>
 #include <llvm/Analysis/RegionInfo.h>
+#include <llvm/Analysis/ScalarEvolution.h>
+#include <llvm/Analysis/TargetLibraryInfo.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/IR/DataLayout.h>
+#include <llvm/IR/DebugInfoMetadata.h>
+#include <llvm/IR/Dominators.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/InstIterator.h>
@@ -60,7 +64,6 @@
 #include <vector>
 #include <set>
 
-
 /** Analysis tools **/
 std::string get_name(llvm::Value* value);
 
@@ -72,6 +75,7 @@ void PrintModulePHIDFG(llvm::Module* Mod, std::fstream& file);
 
 
 /**Transform tools**/
+void GenerateCode(llvm::Module& Mod);//Temp for bug
 
 //TODO
 
@@ -80,8 +84,8 @@ int main(int argc, char **argv){
   llvm::InitLLVM X(argc ,argv);
   llvm::SMDiagnostic Err;
   std::unique_ptr<llvm::LLVMContext> Ctx = std::make_unique<llvm::LLVMContext>();
-  //std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./afterInstru.ll",Err,*Ctx);
-  std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("../test.ll",Err,*Ctx);
+  std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("./afterInstru.ll",Err,*Ctx);
+  //std::unique_ptr<llvm::Module> Mod = llvm::parseIRFile("../test.ll",Err,*Ctx);
    
   /**
   // Print PHI DDG to analyze
@@ -94,14 +98,12 @@ int main(int argc, char **argv){
   llvm::PassBuilder pb;
   llvm::FunctionPassManager fpm;
   llvm::ModulePassManager mpm;
-  polly::ScopPassManager spm;
   llvm::LoopPassManager lpm;
 
   llvm::LoopAnalysisManager lam;
   llvm::FunctionAnalysisManager fam;
   llvm::CGSCCAnalysisManager cgam;
   llvm::ModuleAnalysisManager mam;
-  polly::ScopAnalysisManager sam;
   
   
   pb.registerModuleAnalyses(mam);
@@ -109,19 +111,11 @@ int main(int argc, char **argv){
   pb.registerLoopAnalyses(lam);
   pb.registerCGSCCAnalyses(cgam);
 
-  fam.registerPass([&]{return polly::ScopAnalysis();});
-  fam.registerPass([&]{return polly::ScopInfoAnalysis();});
-  sam.registerPass([&]{return polly::DependenceAnalysis();});
-  sam.registerPass([&]{return polly::IslAstAnalysis();});
 
   mam.registerPass([&]{return llvm::FunctionAnalysisManagerModuleProxy(fam);});
   fam.registerPass([&]{return llvm::ModuleAnalysisManagerFunctionProxy(mam);});
 
-  fam.registerPass([&]{return polly::ScopAnalysisManagerFunctionProxy(sam);});
-  sam.registerPass([&]{return polly::FunctionAnalysisManagerScopProxy(fam);});
-
   fam.registerPass([&]{return llvm::PassInstrumentationAnalysis();});
-  sam.registerPass([&]{return llvm::PassInstrumentationAnalysis();});
 
   pb.crossRegisterProxies(lam,fam,cgam,mam);
   
@@ -153,7 +147,57 @@ int main(int argc, char **argv){
   }
 
   fpm.addPass(llvm::InstCombinePass());
- // fpm.addPass(llvm::GEPRestorePass());
+  fpm.addPass(llvm::GEPRestorePass());
+  mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
+
+  mpm.run(*Mod,mam);
+ 
+  GenerateCode(*Mod);
+ // Print the Module
+  Mod->print(llvm::outs(),nullptr);
+  //testInst(&(*Mod));
+  Mod.reset();
+  
+
+return 0;
+}
+
+void GenerateCode(llvm::Module& Mod){
+  llvm::PassBuilder pb;
+  llvm::FunctionPassManager fpm;
+  llvm::ModulePassManager mpm;
+  polly::ScopPassManager spm;
+  llvm::LoopPassManager lpm;
+
+  llvm::LoopAnalysisManager lam;
+  llvm::FunctionAnalysisManager fam;
+  llvm::CGSCCAnalysisManager cgam;
+  llvm::ModuleAnalysisManager mam;
+  polly::ScopAnalysisManager sam;
+  
+  
+  pb.registerModuleAnalyses(mam);
+  pb.registerFunctionAnalyses(fam);
+  pb.registerLoopAnalyses(lam);
+  pb.registerCGSCCAnalyses(cgam);
+ 
+
+  fam.registerPass([&]{return polly::ScopAnalysis();});
+  fam.registerPass([&]{return polly::ScopInfoAnalysis();});
+  sam.registerPass([&]{return polly::DependenceAnalysis();});
+  sam.registerPass([&]{return polly::IslAstAnalysis();});
+
+  mam.registerPass([&]{return llvm::FunctionAnalysisManagerModuleProxy(fam);});
+  fam.registerPass([&]{return llvm::ModuleAnalysisManagerFunctionProxy(mam);});
+
+  fam.registerPass([&]{return polly::ScopAnalysisManagerFunctionProxy(sam);});
+  sam.registerPass([&]{return polly::FunctionAnalysisManagerScopProxy(fam);});
+
+  fam.registerPass([&]{return llvm::PassInstrumentationAnalysis();});
+  sam.registerPass([&]{return llvm::PassInstrumentationAnalysis();});
+
+  pb.crossRegisterProxies(lam,fam,cgam,mam);
+
   fpm.addPass(polly::CodePreparationPass());
 
   spm.addPass(polly::SimplifyPass(0));                 // 1
@@ -164,18 +208,11 @@ int main(int argc, char **argv){
   spm.addPass(polly::IslScheduleOptimizerPass());      // 6
 
   spm.addPass(polly::CodeGenerationPass());
-
-  //fpm.addPass(polly::createFunctionToScopPassAdaptor(std::move(spm)));
+  fpm.addPass(polly::createFunctionToScopPassAdaptor(std::move(spm)));
   mpm.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fpm)));
 
-  mpm.run(*Mod,mam);
 
-  // Print the Module
-  Mod->print(llvm::outs(),nullptr);
-  //testInst(&(*Mod));
-  Mod.reset();
-  
-  return 0;
+  mpm.run(Mod,mam);
 }
 
 void testInst(llvm::Module * Mod){

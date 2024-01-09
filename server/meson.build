@@ -7,7 +7,8 @@ sources = files(
     'decode.cc',
     'optimizer.cc',
     'rewriteserver.cc',
-    'DataProcessPass.cc',
+    'GEPPromotePass.cc',
+    'GEPRestorePass.cc',
 )
 
 config_data = configuration_data()

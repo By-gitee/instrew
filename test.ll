@@ -1,423 +1,732 @@
-; ModuleID = 'mod'
-source_filename = "mod"
-
-@instrew_baseaddr = external global i64, !absolute_symbol !0
-@llvm.used = appending global [3 x ptr] [ptr @instrew_baseaddr, ptr @syscall, ptr @cpuid], section "llvm.metadata"
-
-declare void @syscall(ptr addrspace(1))
-
-declare { i64, i64 } @cpuid(i32, i32)
-
+Inst MC:48 c1 e0 4 4c 1 ca 48 1 c8 48 89 55 90 48 
+Inst MC:48 c1 e0 4 4c 1 ca 48 1 c8 48 89 55 90 48 
+Inst MC:73 d6 48 8d d 57 ba 1 0 ba 9c 0 0 0 48 
+Inst MC:48 8b 55 8 48 8b 4d 30 80 3a 0 75 18 48 8b 
+Inst MC:48 8b 55 8 48 8b 4d 30 80 3a 0 75 18 48 8b 
+Inst MC:48 8d bb d0 2 0 0 b8 da 0 0 0 f 5 89 
+Inst MC:31 d2 eb dd 48 8d d 45 d7 2 0 ba 25 0 0 
+Inst MC:55 48 89 e5 c7 45 fc 0 0 0 0 c7 45 ec a 
+==  %29 = load i64, ptr %15, align 4
+==i64 0
+==i64 29
+==  %22 = zext i32 %59 to i64
+new load ptr:  %57 = getelementptr inbounds [10 x [2000 x [3000 x i32]]], ptr @arr0, i64 0, i64 %47, i64 %55, i64 %56
+old:  %61 = add i32 %60, %56
+==i64 %2
+==  %30 = ptrtoint ptr %29 to i64
+==  %28 = load i64, ptr %16, align 4
+==i64 %5
+==i64 %4
+==i64 %8
+==i64 %9
+==i64 %11
+==i64 %12
+[Bydebug]-1
+[Bydebug]-2
+[Bydebug]-3
+[Bydebug]-4
+[Bydebug]-5
+[Bydebug]-6
+判定
+Checking region:%14 => <Function Return>
+	判定
+Checking region:.preheader => %21
+	ret1
+ret2
+ret3
+ret4
+ret5
+    0
+  store i32 %.0310, ptr %50, align 4 Here?            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 8
+            isValidAccess - final
+1
+            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+  %60 = load i32, ptr %59, align 4 Here?            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+1
+            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+  store i32 %61, ptr %59, align 4 Here?            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+1
+            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+ret6
+ret7
+happen
+%14 => <Function Return>
+[Bydebug]-6 ValidRegions.size(): 1
+[Bydebug]-7
+[Bydebug]-7 for
+[Bydebug]-71 ValidRegions.size(): 1
+[Bydebug]-72 ValidRegions.size(): 1
+[Bydebug]-7 for
+[Bydebug]-71 ValidRegions.size(): 1
+[Bydebug]-72 ValidRegions.size(): 1
+[Bydebug]-73 ValidRegions.size(): 1
+[Bydebug]isProfitableRegion - 1
+[Bydebug]isProfitableRegion - 2
+.preheader => %21: 1 1
+[0] .preheader => %21
+  [1] %48 => %45
+    [2] %54 => %51
+[Bydebug]isProfitableRegion - 3
+[Bydebug]isProfitableRegion - 4
+[Bydebug]-8
+[Bydebug]-8 ValidRegions.size(): 1
+[Bydebug]-9
+[Bydebug]-9 ValidRegions.size(): 1
+[Bydebug]-10
+[Bydebug]-10 ValidRegions.size(): 1
+[Bydebug]-11
+[ByDebug]recomput
+[Bydebug]recomput 1
+Checking region:.preheader => %21
+	ret1
+ret2
+ret3
+ret4
+ret5
+    0
+  store i32 %.0310, ptr %50, align 4 Here?            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 8
+            isValidAccess - final
+1
+            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+  %60 = load i32, ptr %59, align 4 Here?            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+1
+            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+  store i32 %61, ptr %59, align 4 Here?            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+1
+            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+ret6
+ret7
+[Bydebug]recomput 2
+[Bydebug]recomput 3
+[Bydebug]recomput 4
+[Bydebug]recomput 5
+  IsParallel - 1
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+IsParallel0
+  IsParallel - 1
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+IsParallel0
+  IsParallel - 1
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+  IsParallel - 2
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+IsParallel1
+  IsParallel - 1
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+  IsParallel - 2
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+IsParallel1
+  IsParallel - 1
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+IsParallel0
+  IsParallel - 1
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+IsParallel0
+  IsParallel - 1
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+IsParallel0
+  IsParallel - 1
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+	RAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9 }
+	WAR dependences:
+		{ Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9 }
+	WAW dependences:
+		{ Stmt1[i0, i0] -> Stmt2[i0, i0, i0] : 0 <= i0 <= 9; Stmt2[i0, i0, i0] -> Stmt1[i0, 1 + i0] : 0 <= i0 <= 9; Stmt1last[i0, i1] -> Stmt1last[i0, 1 + i1] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt1last[i0, 19] -> Stmt1last[1 + i0, 0] : 0 <= i0 <= 8; Stmt2last[i0, i1, i2] -> Stmt2last[i0, i1, 1 + i2] : 0 <= i0 <= 9 and 0 <= i1 <= 19 and 0 <= i2 <= 28; Stmt2last[i0, i1, 29] -> Stmt2last[i0, 1 + i1, 0] : 0 <= i0 <= 9 and 0 <= i1 <= 18; Stmt2last[i0, 19, 29] -> Stmt2last[1 + i0, 0, 0] : 0 <= i0 <= 8; Stmt1[i0, i1] -> Stmt1[i0, 1 + i1] : i0 <= 9 and ((0 <= i1 < i0) or (i0 >= 0 and i0 < i1 <= 18)) }
+	Reduction dependences:
+		{  }
+	Transitive closure of reduction dependences:
+		{  }
+IsParallel0
+Payload is not a nullptr0
+Payload is not a nullptr0
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+Payload is not a nullptr0
+Payload is not a nullptr0
+1 1<=option
+ 1<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+Payload is not a nullptr1
+Payload is not a nullptr1
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr1
+1 0
+Payload is not a nullptr1
+Payload is not a nullptr0
+Payload is not a nullptr0
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+Payload is not a nullptr0
+Payload is not a nullptr0
+1 1<=option
+ 1<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+Payload is not a nullptr0
+Payload is not a nullptr0
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+Payload is not a nullptr0
+Payload is not a nullptr0
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+Payload is not a nullptr0
+Payload is not a nullptr0
+1 1<=option
+ 1<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+0==
+OMP => 1
+OMP => 2
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+OMP => 3
+Payload is not a nullptr0
+0==
+OMP => 1
+OMP => 2
+1 1<=option
+ 1<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+OMP => 3
+Payload is not a nullptr0
+OMP => 4
+OMP => 4
+0==
+OMP => 1
+OMP => 2
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr1
+1 0
+Payload is not a nullptr1
+0==
+OMP => 1
+OMP => 2
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+OMP => 3
+Payload is not a nullptr0
+0==
+OMP => 1
+OMP => 2
+1 1<=option
+ 1<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+OMP => 3
+Payload is not a nullptr0
+OMP => 4
+OMP => 4
+0==
+OMP => 1
+OMP => 2
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+OMP => 3
+Payload is not a nullptr0
+0==
+OMP => 1
+OMP => 2
+1 1<=option
+ 0<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+OMP => 3
+Payload is not a nullptr0
+0==
+OMP => 1
+OMP => 2
+1 1<=option
+ 1<=isInnermost
+  Payload is not a nullptr0
+0 0
+Payload is not a nullptr0
+OMP => 3
+Payload is not a nullptr0
+OMP => 4
+OMP => 4
+OMP => 4
+[ByDebug]recomput
+[Bydebug]recomput 1
+Checking region:.preheader => polly.merge_new_and_old
+	ret1
+ret2
+ret3
+ret4
+ret5
+    0
+  store i32 %.0310, ptr %50, align 4 Here?            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 8
+            isValidAccess - final
+1
+            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+  %60 = load i32, ptr %59, align 4 Here?            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+1
+            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+  store i32 %61, ptr %59, align 4 Here?            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+1
+            isValidAccess - 1
+            isValidAccess - 2
+            isValidAccess - 3
+            isValidAccess - 4
+            isValidAccess - 5
+            isValidAccess - 8
+            isValidAccess - final
+ret6
+ret7
+[Bydebug]recomput 2
+[Bydebug]recomput 3
+[Bydebug]recomput 4
+[Bydebug]recomput 5
 ; Function Attrs: null_pointer_is_valid
 define hhvmcc { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } @S0_hhvm(i64 %0, ptr addrspace(1) noalias nocapture align 16 dereferenceable(400) %1, i64 %2, i64 %3, i64 %4, i64 %5, i64 %6, i64 %7, i64 %8, i64 %9, i64 %10, i64 %11, i64 %12, i64 %13) #0 {
-  %15 = getelementptr i8, ptr addrspace(1) %1, i64 0
-  %16 = getelementptr i8, ptr addrspace(1) %1, i64 8
-  %17 = getelementptr i8, ptr addrspace(1) %1, i64 16
-  %18 = getelementptr i8, ptr addrspace(1) %1, i64 24
-  %19 = getelementptr i8, ptr addrspace(1) %1, i64 32
-  %20 = getelementptr i8, ptr addrspace(1) %1, i64 40
-  %21 = getelementptr i8, ptr addrspace(1) %1, i64 48
-  %22 = getelementptr i8, ptr addrspace(1) %1, i64 56
-  %23 = getelementptr i8, ptr addrspace(1) %1, i64 64
-  %24 = getelementptr i8, ptr addrspace(1) %1, i64 72
-  %25 = getelementptr i8, ptr addrspace(1) %1, i64 80
-  %26 = getelementptr i8, ptr addrspace(1) %1, i64 88
-  %27 = getelementptr i8, ptr addrspace(1) %1, i64 96
-  %28 = getelementptr i8, ptr addrspace(1) %1, i64 104
-  %29 = getelementptr i8, ptr addrspace(1) %1, i64 112
-  %30 = getelementptr i8, ptr addrspace(1) %1, i64 120
-  %31 = getelementptr i8, ptr addrspace(1) %1, i64 128
-  %32 = getelementptr i8, ptr addrspace(1) %1, i64 136
-  %33 = getelementptr i8, ptr addrspace(1) %1, i64 137
-  %34 = getelementptr i8, ptr addrspace(1) %1, i64 138
-  %35 = getelementptr i8, ptr addrspace(1) %1, i64 139
-  %36 = getelementptr i8, ptr addrspace(1) %1, i64 140
-  %37 = getelementptr i8, ptr addrspace(1) %1, i64 141
-  %38 = getelementptr i8, ptr addrspace(1) %1, i64 142
-  %39 = getelementptr i8, ptr addrspace(1) %1, i64 144
-  %40 = getelementptr i8, ptr addrspace(1) %1, i64 152
-  %41 = getelementptr i8, ptr addrspace(1) %1, i64 160
-  %42 = getelementptr i8, ptr addrspace(1) %1, i64 176
-  %43 = getelementptr i8, ptr addrspace(1) %1, i64 192
-  %44 = getelementptr i8, ptr addrspace(1) %1, i64 208
-  %45 = getelementptr i8, ptr addrspace(1) %1, i64 224
-  %46 = getelementptr i8, ptr addrspace(1) %1, i64 240
-  %47 = getelementptr i8, ptr addrspace(1) %1, i64 256
-  %48 = getelementptr i8, ptr addrspace(1) %1, i64 272
-  %49 = getelementptr i8, ptr addrspace(1) %1, i64 288
-  %50 = getelementptr i8, ptr addrspace(1) %1, i64 304
-  %51 = getelementptr i8, ptr addrspace(1) %1, i64 320
-  %52 = getelementptr i8, ptr addrspace(1) %1, i64 336
-  %53 = getelementptr i8, ptr addrspace(1) %1, i64 352
-  %54 = getelementptr i8, ptr addrspace(1) %1, i64 368
-  %55 = getelementptr i8, ptr addrspace(1) %1, i64 384
-  %56 = getelementptr i8, ptr addrspace(1) %1, i64 400
-  %57 = load i64, ptr addrspace(1) %28, align 4
-  %58 = load i64, ptr addrspace(1) %29, align 4
-  %59 = load i64, ptr addrspace(1) %30, align 4
-  %60 = load i64, ptr addrspace(1) %31, align 4
-  %61 = load i1, ptr addrspace(1) %32, align 1
-  %62 = load i1, ptr addrspace(1) %33, align 1
-  %63 = load i8, ptr addrspace(1) %34, align 1
-  %64 = load i1, ptr addrspace(1) %35, align 1
-  %65 = load i1, ptr addrspace(1) %36, align 1
-  %66 = load i1, ptr addrspace(1) %37, align 1
-  %67 = load i1, ptr addrspace(1) %38, align 1
-  %68 = load <2 x i64>, ptr addrspace(1) %41, align 16
-  %69 = load <2 x i64>, ptr addrspace(1) %42, align 16
-  %70 = load <2 x i64>, ptr addrspace(1) %43, align 16
-  %71 = load <2 x i64>, ptr addrspace(1) %44, align 16
-  %72 = load <2 x i64>, ptr addrspace(1) %45, align 16
-  %73 = load <2 x i64>, ptr addrspace(1) %46, align 16
-  %74 = load <2 x i64>, ptr addrspace(1) %47, align 16
-  %75 = load <2 x i64>, ptr addrspace(1) %48, align 16
-  %76 = load <2 x i64>, ptr addrspace(1) %49, align 16
-  %77 = load <2 x i64>, ptr addrspace(1) %50, align 16
-  %78 = load <2 x i64>, ptr addrspace(1) %51, align 16
-  %79 = load <2 x i64>, ptr addrspace(1) %52, align 16
-  %80 = load <2 x i64>, ptr addrspace(1) %53, align 16
-  %81 = load <2 x i64>, ptr addrspace(1) %54, align 16
-  %82 = load <2 x i64>, ptr addrspace(1) %55, align 16
-  %83 = load <2 x i64>, ptr addrspace(1) %56, align 16
-  br label %84
+  %.s2a42 = alloca i64, align 8
+  %.s2a41 = alloca i64, align 8
+  %polly.par.userContext = alloca {}, align 8
+  %.s2a = alloca i64, align 8
+  br label %.split
 
-84:                                               ; preds = %14
-  %85 = phi i64 [ %6, %14 ]
-  %86 = phi i64 [ %7, %14 ]
-  %87 = phi i64 [ %3, %14 ]
-  %88 = phi i64 [ %13, %14 ]
-  %89 = inttoptr i64 %87 to ptr
-  %90 = getelementptr i64, ptr %89, i64 -1
-  store i64 %88, ptr %90, align 4
-  %91 = ptrtoint ptr %90 to i64
-  %92 = inttoptr i64 %91 to ptr
-  %93 = getelementptr i8, ptr %92, i64 -4
-  store i32 0, ptr %93, align 1
-  %94 = getelementptr i8, ptr %92, i64 -48
-  store i64 10, ptr %94, align 1
-  %95 = getelementptr i8, ptr %92, i64 -56
-  store i64 20, ptr %95, align 1
-  %96 = getelementptr i8, ptr %92, i64 -64
-  store i64 30, ptr %96, align 1
-  %97 = getelementptr i8, ptr %92, i64 -24
-  store i64 0, ptr %97, align 1
-  br label %98
+.split:                                           ; preds = %14
+  %15 = inttoptr i64 %3 to ptr
+  %16 = getelementptr i64, ptr %15, i64 -1
+  store i64 %13, ptr %16, align 4
+  %17 = getelementptr i8, ptr %15, i64 -12
+  store i32 0, ptr %17, align 1
+  %18 = getelementptr i8, ptr %15, i64 -28
+  store i32 10, ptr %18, align 1
+  %19 = getelementptr i64, ptr %15, i64 -4
+  store i32 20, ptr %19, align 1
+  %20 = getelementptr i8, ptr %15, i64 -36
+  store i32 30, ptr %20, align 1
+  br label %polly.split_new_and_old
 
-98:                                               ; preds = %84, %253
-  %99 = phi i64 [ %254, %253 ], [ %85, %84 ]
-  %100 = phi i64 [ %255, %253 ], [ %86, %84 ]
-  %101 = phi i64 [ %256, %253 ], [ %91, %84 ]
-  %102 = phi i64 [ %257, %253 ], [ %91, %84 ]
-  %103 = inttoptr i64 %102 to ptr
-  %104 = getelementptr i8, ptr %103, i64 -24
-  %105 = load i64, ptr %104, align 1
-  %106 = getelementptr i8, ptr %103, i64 -48
-  %107 = load i64, ptr %106, align 1
-  %108 = sub i64 %105, %107
-  %109 = icmp slt i64 %108, 0
-  %110 = icmp eq i64 %105, %107
-  %111 = trunc i64 %108 to i8
-  %112 = xor i64 %105, %107
-  %113 = xor i64 %112, %108
-  %114 = and i64 %113, 16
-  %115 = icmp ne i64 %114, 0
-  %116 = icmp ult i64 %105, %107
-  %117 = icmp slt i64 %105, %107
-  %118 = icmp ne i1 %109, %117
-  %119 = icmp ne i1 %109, %118
-  %120 = xor i1 %119, true
-  %121 = select i1 %120, i64 140501931127309, i64 140501931127145
-  br i1 %120, label %122, label %140
+polly.split_new_and_old:                          ; preds = %.split
+  br i1 true, label %polly.start, label %.preheader.pre_entry_bb
 
-122:                                              ; preds = %98
-  %123 = phi i64 [ %99, %98 ]
-  %124 = phi i64 [ %100, %98 ]
-  %125 = phi i64 [ %101, %98 ]
-  %126 = phi i64 [ %105, %98 ]
-  %127 = trunc i64 %126 to i32
-  %128 = xor i32 %127, %127
-  %129 = zext i32 %128 to i64
-  %130 = icmp eq i32 %128, 0
-  %131 = icmp slt i32 %128, 0
-  %132 = trunc i32 %128 to i8
-  %133 = inttoptr i64 %125 to ptr
-  %134 = getelementptr i64, ptr %133, i64 1
-  %135 = ptrtoint ptr %134 to i64
-  %136 = load i64, ptr %133, align 4
-  %137 = getelementptr i64, ptr %134, i64 1
-  %138 = ptrtoint ptr %137 to i64
-  %139 = load i64, ptr %134, align 4
-  br label %346
+.preheader.pre_entry_bb:                          ; preds = %polly.split_new_and_old
+  br label %.preheader
 
-140:                                              ; preds = %98
-  %141 = phi i64 [ %99, %98 ]
-  %142 = phi i64 [ %100, %98 ]
-  %143 = phi i64 [ %101, %98 ]
-  %144 = phi i64 [ %102, %98 ]
-  %145 = inttoptr i64 %144 to ptr
-  %146 = getelementptr i8, ptr %145, i64 -32
-  store i64 0, ptr %146, align 1
-  br label %147
+.preheader:                                       ; preds = %.preheader.pre_entry_bb, %45
+  %.011 = phi i32 [ %46, %45 ], [ 0, %.preheader.pre_entry_bb ]
+  br label %48
 
-147:                                              ; preds = %323, %140
-  %148 = phi i64 [ %141, %140 ], [ %324, %323 ]
-  %149 = phi i64 [ %142, %140 ], [ %325, %323 ]
-  %150 = phi i64 [ %143, %140 ], [ %326, %323 ]
-  %151 = phi i64 [ %144, %140 ], [ %327, %323 ]
-  %152 = inttoptr i64 %151 to ptr
-  %153 = getelementptr i8, ptr %152, i64 -32
-  %154 = load i64, ptr %153, align 1
-  %155 = getelementptr i8, ptr %152, i64 -56
-  %156 = load i64, ptr %155, align 1
-  %157 = sub i64 %154, %156
-  %158 = icmp slt i64 %157, 0
-  %159 = icmp eq i64 %154, %156
-  %160 = trunc i64 %157 to i8
-  %161 = xor i64 %154, %156
-  %162 = xor i64 %161, %157
-  %163 = and i64 %162, 16
-  %164 = icmp ne i64 %163, 0
-  %165 = icmp ult i64 %154, %156
-  %166 = icmp slt i64 %154, %156
-  %167 = icmp ne i1 %158, %166
-  %168 = icmp ne i1 %158, %167
-  %169 = xor i1 %168, true
-  %170 = select i1 %169, i64 140501931127287, i64 140501931127167
-  br i1 %169, label %171, label %176
+polly.merge_new_and_old:                          ; preds = %polly.exiting, %45
+  %.merge = phi i64 [ %.final_reload, %polly.exiting ], [ %49, %45 ]
+  %.merge44 = phi i64 [ %.final_reload43, %polly.exiting ], [ %57, %45 ]
+  %.merge46 = phi i64 [ %.final_reload45, %polly.exiting ], [ %58, %45 ]
+  br label %21
 
-171:                                              ; preds = %147
-  %172 = phi i64 [ %148, %147 ]
-  %173 = phi i64 [ %149, %147 ]
-  %174 = phi i64 [ %150, %147 ]
-  %175 = phi i64 [ %151, %147 ]
-  br label %253
+21:                                               ; preds = %polly.merge_new_and_old
+  %22 = getelementptr inbounds [10 x [2000 x [3000 x i32]]], ptr @arr0, i64 0, i64 %.merge, i64 %.merge44, i64 %.merge46
+  %23 = load i32, ptr %22, align 4
+  %24 = zext i32 %23 to i64
+  %25 = getelementptr i64, ptr %15, i64 -3
+  %26 = getelementptr i8, ptr %15, i64 -20
+  %27 = getelementptr i64, ptr %15, i64 -2
+  store i32 30, ptr %25, align 4
+  store i32 20, ptr %26, align 4
+  store i32 10, ptr %27, align 4
+  %28 = load i64, ptr %16, align 4
+  %29 = getelementptr i64, ptr %15, i64 1
+  %30 = ptrtoint ptr %29 to i64
+  %31 = load i64, ptr %15, align 4
+  %32 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } undef, i64 %31, 0
+  %33 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %32, i64 0, 8
+  %34 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %33, i64 29, 5
+  %35 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %34, i64 %24, 4
+  %36 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %35, i64 %2, 1
+  %37 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %36, i64 %30, 13
+  %38 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %37, i64 %28, 11
+  %39 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %38, i64 %5, 3
+  %40 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %39, i64 %4, 2
+  %41 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %40, i64 %8, 6
+  %42 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %41, i64 %9, 7
+  %43 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %42, i64 %11, 9
+  %44 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %43, i64 %12, 10
+  ret { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %44
 
-176:                                              ; preds = %147
-  %177 = phi i64 [ %150, %147 ]
-  %178 = phi i64 [ %151, %147 ]
-  %179 = inttoptr i64 %178 to ptr
-  %180 = getelementptr i8, ptr %179, i64 -32
-  %181 = load i64, ptr %180, align 1
-  %182 = getelementptr i8, ptr %179, i64 -24
-  %183 = load i64, ptr %182, align 1
-  %184 = mul i64 %183, 48000000
-  %185 = sext i64 %183 to i128
-  %186 = mul i128 %185, 48000000
-  %187 = sext i64 %184 to i128
-  %188 = icmp ne i128 %186, %187
-  %189 = add i64 140501931139136, %184
-  %190 = icmp eq i64 %189, 0
-  %191 = icmp slt i64 %189, 0
-  %192 = trunc i64 %189 to i8
-  %193 = xor i64 140501931139136, %184
-  %194 = xor i64 %193, %189
-  %195 = and i64 %194, 16
-  %196 = icmp ne i64 %195, 0
-  %197 = icmp ult i64 %189, 140501931139136
-  %198 = xor i64 140501931139136, %184
-  %199 = xor i64 %198, -1
-  %200 = xor i64 %189, 140501931139136
-  %201 = and i64 %199, %200
-  %202 = icmp slt i64 %201, 0
-  %203 = getelementptr i8, ptr %179, i64 -24
-  %204 = load i64, ptr %203, align 1
-  %205 = mul i64 %204, 24000
-  %206 = sext i64 %204 to i128
-  %207 = mul i128 %206, 24000
-  %208 = sext i64 %205 to i128
-  %209 = icmp ne i128 %207, %208
-  %210 = add i64 %189, %205
-  %211 = icmp eq i64 %210, 0
-  %212 = icmp slt i64 %210, 0
-  %213 = trunc i64 %210 to i8
-  %214 = xor i64 %189, %205
-  %215 = xor i64 %214, %210
-  %216 = and i64 %215, 16
-  %217 = icmp ne i64 %216, 0
-  %218 = icmp ult i64 %210, %189
-  %219 = xor i64 %189, %205
-  %220 = xor i64 %219, -1
-  %221 = xor i64 %210, %189
-  %222 = and i64 %220, %221
-  %223 = icmp slt i64 %222, 0
-  %224 = getelementptr i8, ptr %179, i64 -24
-  %225 = load i64, ptr %224, align 1
-  %226 = inttoptr i64 %210 to ptr
-  %227 = getelementptr i64, ptr %226, i64 %225
-  store i64 %181, ptr %227, align 1
-  %228 = getelementptr i8, ptr %179, i64 -40
-  store i64 0, ptr %228, align 1
-  br label %229
+45:                                               ; preds = %51
+  %46 = add nuw nsw i32 %.011, 1
+  %47 = icmp ugt i32 %.011, 8
+  br i1 %47, label %polly.merge_new_and_old, label %.preheader
 
-229:                                              ; preds = %176, %281
-  %230 = phi i64 [ %282, %281 ], [ %181, %176 ]
-  %231 = phi i64 [ %283, %281 ], [ %225, %176 ]
-  %232 = phi i64 [ %284, %281 ], [ %177, %176 ]
-  %233 = phi i64 [ %285, %281 ], [ %178, %176 ]
-  %234 = inttoptr i64 %233 to ptr
-  %235 = getelementptr i8, ptr %234, i64 -40
-  %236 = load i64, ptr %235, align 1
-  %237 = getelementptr i8, ptr %234, i64 -64
-  %238 = load i64, ptr %237, align 1
-  %239 = sub i64 %236, %238
-  %240 = icmp slt i64 %239, 0
-  %241 = icmp eq i64 %236, %238
-  %242 = trunc i64 %239 to i8
-  %243 = xor i64 %236, %238
-  %244 = xor i64 %243, %239
-  %245 = and i64 %244, 16
-  %246 = icmp ne i64 %245, 0
-  %247 = icmp ult i64 %236, %238
-  %248 = icmp slt i64 %236, %238
-  %249 = icmp ne i1 %240, %248
-  %250 = icmp ne i1 %240, %249
-  %251 = xor i1 %250, true
-  %252 = select i1 %251, i64 140501931127265, i64 140501931127230
-  br i1 %251, label %276, label %281
+48:                                               ; preds = %.preheader, %51
+  %.0310 = phi i32 [ 0, %.preheader ], [ %52, %51 ]
+  %49 = zext i32 %.011 to i64
+  %50 = getelementptr inbounds [10 x [2000 x [3000 x i32]]], ptr @arr0, i64 0, i64 %49, i64 %49, i64 %49
+  store i32 %.0310, ptr %50, align 4
+  br label %54
 
-253:                                              ; preds = %171
-  %254 = phi i64 [ %172, %171 ]
-  %255 = phi i64 [ %173, %171 ]
-  %256 = phi i64 [ %174, %171 ]
-  %257 = phi i64 [ %175, %171 ]
-  %258 = inttoptr i64 %257 to ptr
-  %259 = getelementptr i8, ptr %258, i64 -24
-  %260 = load i64, ptr %259, align 1
-  %261 = add i64 %260, 1
-  %262 = icmp eq i64 %261, 0
-  %263 = icmp slt i64 %261, 0
-  %264 = trunc i64 %261 to i8
-  %265 = xor i64 %260, 1
-  %266 = xor i64 %265, %261
-  %267 = and i64 %266, 16
-  %268 = icmp ne i64 %267, 0
-  %269 = icmp ult i64 %261, %260
-  %270 = xor i64 %260, 1
-  %271 = xor i64 %270, -1
-  %272 = xor i64 %261, %260
-  %273 = and i64 %271, %272
-  %274 = icmp slt i64 %273, 0
-  %275 = getelementptr i8, ptr %258, i64 -24
-  store i64 %261, ptr %275, align 1
-  br label %98
+51:                                               ; preds = %54
+  %52 = add nuw nsw i32 %.0310, 1
+  %53 = icmp ugt i32 %.0310, 18
+  br i1 %53, label %45, label %48
 
-276:                                              ; preds = %229
-  %277 = phi i64 [ %230, %229 ]
-  %278 = phi i64 [ %231, %229 ]
-  %279 = phi i64 [ %232, %229 ]
-  %280 = phi i64 [ %233, %229 ]
-  br label %323
+54:                                               ; preds = %48, %54
+  %.049 = phi i32 [ 0, %48 ], [ %62, %54 ]
+  %55 = mul nuw nsw i32 %.0310, %.011
+  %56 = mul nuw nsw i32 %55, %.049
+  %57 = zext i32 %.0310 to i64
+  %58 = zext i32 %.049 to i64
+  %59 = getelementptr inbounds [10 x [2000 x [3000 x i32]]], ptr @arr0, i64 0, i64 %49, i64 %57, i64 %58
+  %60 = load i32, ptr %59, align 4
+  %61 = add i32 %60, %56
+  store i32 %61, ptr %59, align 4
+  %62 = add nuw nsw i32 %.049, 1
+  %63 = icmp ugt i32 %.049, 28
+  br i1 %63, label %51, label %54
 
-281:                                              ; preds = %229
-  %282 = phi i64 [ %230, %229 ]
-  %283 = phi i64 [ %231, %229 ]
-  %284 = phi i64 [ %232, %229 ]
-  %285 = phi i64 [ %233, %229 ]
-  %286 = inttoptr i64 %285 to ptr
-  %287 = getelementptr i8, ptr %286, i64 -24
-  %288 = load i64, ptr %287, align 1
-  %289 = getelementptr i8, ptr %286, i64 -32
-  %290 = load i64, ptr %289, align 1
-  %291 = mul i64 %288, %290
-  %292 = sext i64 %288 to i128
-  %293 = sext i64 %290 to i128
-  %294 = mul i128 %292, %293
-  %295 = sext i64 %291 to i128
-  %296 = icmp ne i128 %294, %295
-  %297 = getelementptr i8, ptr %286, i64 -40
-  %298 = load i64, ptr %297, align 1
-  %299 = mul i64 %291, %298
-  %300 = sext i64 %291 to i128
-  %301 = sext i64 %298 to i128
-  %302 = mul i128 %300, %301
-  %303 = sext i64 %299 to i128
-  %304 = icmp ne i128 %302, %303
-  %305 = getelementptr i8, ptr %286, i64 -16
-  store i64 %299, ptr %305, align 1
-  %306 = getelementptr i8, ptr %286, i64 -40
-  %307 = load i64, ptr %306, align 1
-  %308 = add i64 %307, 1
-  %309 = icmp eq i64 %308, 0
-  %310 = icmp slt i64 %308, 0
-  %311 = trunc i64 %308 to i8
-  %312 = xor i64 %307, 1
-  %313 = xor i64 %312, %308
-  %314 = and i64 %313, 16
-  %315 = icmp ne i64 %314, 0
-  %316 = icmp ult i64 %308, %307
-  %317 = xor i64 %307, 1
-  %318 = xor i64 %317, -1
-  %319 = xor i64 %308, %307
-  %320 = and i64 %318, %319
-  %321 = icmp slt i64 %320, 0
-  %322 = getelementptr i8, ptr %286, i64 -40
-  store i64 %308, ptr %322, align 1
-  br label %229
+polly.start:                                      ; preds = %polly.split_new_and_old
+  br label %polly.loop_preheader
 
-323:                                              ; preds = %276
-  %324 = phi i64 [ %277, %276 ]
-  %325 = phi i64 [ %278, %276 ]
-  %326 = phi i64 [ %279, %276 ]
-  %327 = phi i64 [ %280, %276 ]
-  %328 = inttoptr i64 %327 to ptr
-  %329 = getelementptr i8, ptr %328, i64 -32
-  %330 = load i64, ptr %329, align 1
-  %331 = add i64 %330, 1
-  %332 = icmp eq i64 %331, 0
-  %333 = icmp slt i64 %331, 0
-  %334 = trunc i64 %331 to i8
-  %335 = xor i64 %330, 1
-  %336 = xor i64 %335, %331
-  %337 = and i64 %336, 16
-  %338 = icmp ne i64 %337, 0
-  %339 = icmp ult i64 %331, %330
-  %340 = xor i64 %330, 1
-  %341 = xor i64 %340, -1
-  %342 = xor i64 %331, %330
-  %343 = and i64 %341, %342
-  %344 = icmp slt i64 %343, 0
-  %345 = getelementptr i8, ptr %328, i64 -32
-  store i64 %331, ptr %345, align 1
-  br label %147
+polly.loop_exit:                                  ; preds = %polly.loop_exit18
+  br label %polly.parallel.for
 
-346:                                              ; preds = %122
-  %347 = phi i1 [ undef, %122 ]
-  %348 = phi i1 [ undef, %122 ]
-  %349 = phi i1 [ undef, %122 ]
-  %350 = phi i8 [ undef, %122 ]
-  %351 = phi i1 [ undef, %122 ]
-  %352 = phi i1 [ undef, %122 ]
-  %353 = phi i64 [ %136, %122 ]
-  %354 = phi i64 [ %138, %122 ]
-  %355 = phi i64 [ %123, %122 ]
-  %356 = phi i64 [ %124, %122 ]
-  %357 = phi i64 [ %129, %122 ]
-  %358 = phi i64 [ %139, %122 ]
-  store i1 %352, ptr addrspace(1) %32, align 1
-  store i1 %351, ptr addrspace(1) %33, align 1
-  store i8 %350, ptr addrspace(1) %34, align 1
-  store i1 %349, ptr addrspace(1) %35, align 1
-  store i1 %348, ptr addrspace(1) %36, align 1
-  store i1 %347, ptr addrspace(1) %37, align 1
-  %359 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } undef, i64 %358, 0
-  %360 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %359, i64 %357, 8
-  %361 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %360, i64 %356, 5
-  %362 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %361, i64 %355, 4
-  %363 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %362, i64 %2, 1
-  %364 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %363, i64 %354, 13
-  %365 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %364, i64 %353, 11
-  %366 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %365, i64 %5, 3
-  %367 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %366, i64 %4, 2
-  %368 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %367, i64 %8, 6
-  %369 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %368, i64 %9, 7
-  %370 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %369, i64 %11, 9
-  %371 = insertvalue { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %370, i64 %12, 10
-  ret { i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64, i64 } %371
+polly.parallel.for:                               ; preds = %polly.loop_exit
+  call void @GOMP_parallel_loop_runtime_start(ptr @S0_hhvm_polly_subfn, ptr %polly.par.userContext, i32 0, i64 0, i64 10, i64 1)
+  call void @S0_hhvm_polly_subfn(ptr %polly.par.userContext)
+  call void @GOMP_parallel_end()
+  br label %polly.loop_preheader23
+
+polly.loop_exit24:                                ; preds = %polly.loop_exit30
+  br label %polly.exiting
+
+polly.exiting:                                    ; preds = %polly.loop_exit24
+  %.final_reload = load i64, ptr %.s2a, align 4
+  %.final_reload43 = load i64, ptr %.s2a41, align 4
+  %.final_reload45 = load i64, ptr %.s2a42, align 4
+  br label %polly.merge_new_and_old
+
+polly.loop_header:                                ; preds = %polly.loop_exit18, %polly.loop_preheader
+  %polly.indvar = phi i64 [ 0, %polly.loop_preheader ], [ %polly.indvar_next, %polly.loop_exit18 ]
+  br label %polly.loop_preheader17
+
+polly.loop_exit18:                                ; preds = %polly.stmt.
+  %polly.indvar_next = add nsw i64 %polly.indvar, 1
+  %polly.loop_cond = icmp sle i64 %polly.indvar_next, 9
+  br i1 %polly.loop_cond, label %polly.loop_header, label %polly.loop_exit
+
+polly.loop_preheader:                             ; preds = %polly.start
+  br label %polly.loop_header
+
+polly.loop_header16:                              ; preds = %polly.stmt., %polly.loop_preheader17
+  %polly.indvar19 = phi i64 [ 0, %polly.loop_preheader17 ], [ %polly.indvar_next20, %polly.stmt. ]
+  br label %polly.stmt.
+
+polly.stmt.:                                      ; preds = %polly.loop_header16
+  store i64 %polly.indvar, ptr %.s2a, align 4
+  %polly.indvar_next20 = add nsw i64 %polly.indvar19, 1
+  %polly.loop_cond21 = icmp sle i64 %polly.indvar_next20, 19
+  br i1 %polly.loop_cond21, label %polly.loop_header16, label %polly.loop_exit18
+
+polly.loop_preheader17:                           ; preds = %polly.loop_header
+  br label %polly.loop_header16
+
+polly.loop_header22:                              ; preds = %polly.loop_exit30, %polly.loop_preheader23
+  %polly.indvar25 = phi i64 [ 0, %polly.loop_preheader23 ], [ %polly.indvar_next26, %polly.loop_exit30 ]
+  br label %polly.loop_preheader29
+
+polly.loop_exit30:                                ; preds = %polly.loop_exit36
+  %polly.indvar_next26 = add nsw i64 %polly.indvar25, 1
+  %polly.loop_cond27 = icmp sle i64 %polly.indvar_next26, 9
+  br i1 %polly.loop_cond27, label %polly.loop_header22, label %polly.loop_exit24
+
+polly.loop_preheader23:                           ; preds = %polly.parallel.for
+  br label %polly.loop_header22
+
+polly.loop_header28:                              ; preds = %polly.loop_exit36, %polly.loop_preheader29
+  %polly.indvar31 = phi i64 [ 0, %polly.loop_preheader29 ], [ %polly.indvar_next32, %polly.loop_exit36 ]
+  br label %polly.loop_preheader35
+
+polly.loop_exit36:                                ; preds = %polly.stmt.40
+  %polly.indvar_next32 = add nsw i64 %polly.indvar31, 1
+  %polly.loop_cond33 = icmp sle i64 %polly.indvar_next32, 19
+  br i1 %polly.loop_cond33, label %polly.loop_header28, label %polly.loop_exit30
+
+polly.loop_preheader29:                           ; preds = %polly.loop_header22
+  br label %polly.loop_header28
+
+polly.loop_header34:                              ; preds = %polly.stmt.40, %polly.loop_preheader35
+  %polly.indvar37 = phi i64 [ 0, %polly.loop_preheader35 ], [ %polly.indvar_next38, %polly.stmt.40 ]
+  br label %polly.stmt.40
+
+polly.stmt.40:                                    ; preds = %polly.loop_header34
+  store i64 %polly.indvar31, ptr %.s2a41, align 4
+  store i64 %polly.indvar37, ptr %.s2a42, align 4
+  %polly.indvar_next38 = add nsw i64 %polly.indvar37, 1
+  %polly.loop_cond39 = icmp sle i64 %polly.indvar_next38, 29
+  br i1 %polly.loop_cond39, label %polly.loop_header34, label %polly.loop_exit36
+
+polly.loop_preheader35:                           ; preds = %polly.loop_header28
+  br label %polly.loop_header34
 }
-
-attributes #0 = { null_pointer_is_valid }
-
-!llvm.module.flags = !{!1}
-
-!0 = !{i64 -1, i64 -1}
-!1 = !{i32 1, !"override-stack-alignment", i32 8}
+opt finish
+[Bydebug]ScopInfo is not empty.

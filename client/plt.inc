@@ -24,3 +24,7 @@ PLT_ENTRY("instrew_call_hhvm", dispatch_hhvm_tail) // dispatch.c
 #endif // defined(__x86_64__)
 PLT_ENTRY("memset", memset) // minilibc.c
 PLT_ENTRY("dprintf", dprintf) // minilibc.c
+PLT_ENTRY("GOMP_parallel_loop_runtime_start",GOMP_parallel_loop_runtime_start)
+PLT_ENTRY("GOMP_parallel_end",GOMP_parallel_end)
+PLT_ENTRY("GOMP_loop_end_nowait",GOMP_loop_end_nowait)
+PLT_ENTRY("GOMP_loop_runtime_next",GOMP_loop_runtime_next)

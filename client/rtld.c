@@ -279,7 +279,7 @@ rtld_elf_resolve_sym(RtldElf* re, size_t symtab_idx, size_t sym_idx,
         const char* name = "<unknown>";
         rtld_elf_resolve_str(re, sym_shdr->sh_link, sym->st_name, &name);
         if (!strncmp(name, "glob_", 5)) {
-            dprintf(2, "undefined symbol reference to %s\n", name);
+            dprintf(2, "[1]undefined symbol reference to %s\n", name);
             return -EINVAL;
         } else if (!strcmp(name, "instrew_baseaddr")) {
             *out_addr = re->skew;
@@ -303,7 +303,7 @@ rtld_elf_resolve_sym(RtldElf* re, size_t symtab_idx, size_t sym_idx,
                 }
             }
 
-            dprintf(2, "undefined symbol reference to %s\n", name);
+            dprintf(2, "[2]undefined symbol reference to %s\n", name);
             return -EINVAL;
         }
     } else if (sym->st_shndx == SHN_ABS) {
@@ -658,8 +658,10 @@ int rtld_add_object(Rtld* r, void* obj_base, size_t obj_size, uint64_t skew) {
     size_t totalign = 1;
     for (i = 0, elf_shnt = re.re_shdr; i < re.re_ehdr->e_shnum; i++, elf_shnt++) {
         // We don't support more flags
-        if (elf_shnt->sh_flags & ~(SHF_ALLOC|SHF_EXECINSTR|SHF_MERGE|SHF_STRINGS|SHF_INFO_LINK)) {
-            dprintf(2, "unsupported section flags\n");
+        if (elf_shnt->sh_flags & ~(SHF_ALLOC|SHF_EXECINSTR|SHF_MERGE|SHF_STRINGS|SHF_INFO_LINK
+                                   |SHF_WRITE)) {
+          dprintf(2,"unsupported flag:%d \n",(unsigned)elf_shnt->sh_flags);  
+          dprintf(2, "unsupported section flags\n");
             return -EINVAL;
         }
         if (elf_shnt->sh_flags & SHF_ALLOC) {

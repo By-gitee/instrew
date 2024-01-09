@@ -18,8 +18,9 @@ endif
 
 client_c_args = ['-D_GNU_SOURCE', '-nostdlib', '-fno-builtin',
                  '-fno-stack-protector', '-fomit-frame-pointer', '-fPIC']
-client_link_args = ['-nostdlib', '-nostartfiles', '-lgcc']
 
+client_link_args = ['-nostdlib', '-nostartfiles', '-lgcc','-L /usr/lib/gcc/x86_64-linux-gnu/10/../../../x86_64-linux-gnu/crti.o']
+#client_link_args = [ '-lgcc']
 cc = meson.get_compiler('c')
 if cc.has_argument('-static-pie')
   client_link_args += ['-static-pie']
@@ -37,10 +38,15 @@ if host_machine.cpu_family() == 'x86_64'
   endif
 endif
 
+libgomp = cc.find_library('gomp')
+libc = cc.find_library('c')
+libgcc_eh = cc.find_library('gcc_eh')
+
 client = executable('instrew-client', sources,
                     include_directories: include_directories('.', '../shared'),
                     c_args: client_c_args,
                     link_args: client_link_args,
+                    dependencies: [libgomp,libc,libgcc_eh],
                     install: true)
 
 test('mathlib', executable('test_mathlib', 'math.c', c_args: ['-DTEST', '-fno-builtin']), protocol: 'tap')

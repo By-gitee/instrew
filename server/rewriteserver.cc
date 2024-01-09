@@ -452,7 +452,7 @@ private:
 public:
     void Translate(uintptr_t addr) {
         // [By add]
-        printf("addr:%#X\n",addr);
+        //printf("addr:%#X\n",addr);
         bool isKernelFunc = false;
         if(addr-preAddr == 0xAAF30130 - 0xA9BCDD44){
           isKernelFunc = true;
@@ -500,8 +500,10 @@ public:
         }
 
         auto time_llvm_opt_start = std::chrono::steady_clock::now();
-        
-        optimizer.Optimize(fn);
+        if(isKernelFunc){
+        optimizer.Optimize(*fn);
+        mod->print(llvm::errs(),nullptr);
+        }
         if (instrew_cfg.dumpir & 4)
             mod->print(llvm::errs(), nullptr);
 
