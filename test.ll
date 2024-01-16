@@ -90,9 +90,6 @@ happen
 [Bydebug]-7 for
 [Bydebug]-71 ValidRegions.size(): 1
 [Bydebug]-72 ValidRegions.size(): 1
-[Bydebug]-7 for
-[Bydebug]-71 ValidRegions.size(): 1
-[Bydebug]-72 ValidRegions.size(): 1
 [Bydebug]-73 ValidRegions.size(): 1
 [Bydebug]isProfitableRegion - 1
 [Bydebug]isProfitableRegion - 2
@@ -102,6 +99,9 @@ happen
     [2] %54 => %51
 [Bydebug]isProfitableRegion - 3
 [Bydebug]isProfitableRegion - 4
+[Bydebug]-7 for
+[Bydebug]-71 ValidRegions.size(): 1
+[Bydebug]-72 ValidRegions.size(): 1
 [Bydebug]-8
 [Bydebug]-8 ValidRegions.size(): 1
 [Bydebug]-9
