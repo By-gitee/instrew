@@ -14,6 +14,7 @@ DecodeResult DecodeX86_64(uintptr_t addr, size_t bufsz, const uint8_t* buf) {
         return res;
 
     res.size = ret;
+    /**
     if( (addr & 0xfff) == 0x130){
     std::cout<<"Inst MC:";
     for(int _i=0;_i<15;_i++){
@@ -21,6 +22,7 @@ DecodeResult DecodeX86_64(uintptr_t addr, size_t bufsz, const uint8_t* buf) {
     }
     std::cout<<std::endl;
     }
+    **/
     /**  
     std::cout<<"Inst MC:";
     for(int _i=0;_i<15;_i++){

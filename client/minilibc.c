@@ -9,20 +9,17 @@
 #if defined(__x86_64__)
 //TODO:这个地方实现？
 extern void _init(void) {
-/**
   __asm__ volatile(
                    "sub $0x8,%rsp\n\t"
                    "mov 0x0(%rip),%rax\n\t"
                    "call *%rax\n\t"
                   );
-                  **/
+
   }
 extern void _fini(void){
-  /**
   __asm__ volatile(
                    "sub $0x8,%rsp\n\t"
                   );
-**/
 }
 #endif
 extern int main(int argc, char** argv);

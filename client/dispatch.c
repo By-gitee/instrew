@@ -69,17 +69,21 @@ resolve_func(struct CpuState* cpu_state, uintptr_t addr,
 
         void* obj_base;
         size_t obj_size;
+        printf("01=\n");
         retval = translator_get(&state->translator, addr, &obj_base, &obj_size);
         if (retval < 0)
             goto error;
 
+        printf("02=\n");
         retval = rtld_add_object(&state->rtld, obj_base, obj_size, addr);
         if (retval < 0)
             goto error;
+        printf("03=\n");
         retval = rtld_resolve(&state->rtld, addr, &func);
         if (retval < 0)
             goto error;
 
+        printf("04=\n");
         if (UNLIKELY(state->tc.tc_profile)) {
             clock_gettime(CLOCK_MONOTONIC, &end_time);
             size_t time_ns = (end_time.tv_sec - start_time.tv_sec) * 1000000000

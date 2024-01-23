@@ -1,0 +1,83 @@
+
+func_7f5308609130.elf:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <S0_hhvm>:
+   0:	f3 0f 1e fa          	endbr64 
+   4:	41 54                	push   %r12
+   6:	49 bc 40 c0 60 08 53 	movabs $0x7f530860c040,%r12
+   d:	7f 00 00 
+  10:	4d 89 6f f8          	mov    %r13,-0x8(%r15)
+  14:	41 c7 47 f4 00 00 00 	movl   $0x0,-0xc(%r15)
+  1b:	00 
+  1c:	41 c7 47 e4 0a 00 00 	movl   $0xa,-0x1c(%r15)
+  23:	00 
+  24:	41 c7 47 e0 14 00 00 	movl   $0x14,-0x20(%r15)
+  2b:	00 
+  2c:	41 c7 47 dc 1e 00 00 	movl   $0x1e,-0x24(%r15)
+  33:	00 
+  34:	41 c7 47 f0 00 00 00 	movl   $0x0,-0x10(%r15)
+  3b:	00 
+  3c:	eb 0d                	jmp    4b <S0_hhvm+0x4b>
+  3e:	66 90                	xchg   %ax,%ax
+  40:	41 8b 5f f0          	mov    -0x10(%r15),%ebx
+  44:	83 c3 01             	add    $0x1,%ebx
+  47:	41 89 5f f0          	mov    %ebx,-0x10(%r15)
+  4b:	41 8b 5f f0          	mov    -0x10(%r15),%ebx
+  4f:	41 3b 5f e4          	cmp    -0x1c(%r15),%ebx
+  53:	0f 8d b2 00 00 00    	jge    10b <S0_hhvm+0x10b>
+  59:	41 c7 47 ec 00 00 00 	movl   $0x0,-0x14(%r15)
+  60:	00 
+  61:	eb 1a                	jmp    7d <S0_hhvm+0x7d>
+  63:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+  6a:	00 00 00 
+  6d:	0f 1f 00             	nopl   (%rax)
+  70:	89 da                	mov    %ebx,%edx
+  72:	41 8b 47 ec          	mov    -0x14(%r15),%eax
+  76:	83 c0 01             	add    $0x1,%eax
+  79:	41 89 47 ec          	mov    %eax,-0x14(%r15)
+  7d:	41 8b 5f ec          	mov    -0x14(%r15),%ebx
+  81:	41 3b 5f e0          	cmp    -0x20(%r15),%ebx
+  85:	7d b9                	jge    40 <S0_hhvm+0x40>
+  87:	49 63 4f f0          	movslq -0x10(%r15),%rcx
+  8b:	4c 69 f1 00 36 6e 01 	imul   $0x16e3600,%rcx,%r14
+  92:	4d 01 e6             	add    %r12,%r14
+  95:	48 69 d1 e0 2e 00 00 	imul   $0x2ee0,%rcx,%rdx
+  9c:	4c 01 f2             	add    %r14,%rdx
+  9f:	89 1c 8a             	mov    %ebx,(%rdx,%rcx,4)
+  a2:	41 c7 47 e8 00 00 00 	movl   $0x0,-0x18(%r15)
+  a9:	00 
+  aa:	41 8b 57 e8          	mov    -0x18(%r15),%edx
+  ae:	41 3b 57 dc          	cmp    -0x24(%r15),%edx
+  b2:	7d bc                	jge    70 <S0_hhvm+0x70>
+  b4:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+  bb:	00 00 00 
+  be:	66 90                	xchg   %ax,%ax
+  c0:	48 63 ca             	movslq %edx,%rcx
+  c3:	41 8b 5f f0          	mov    -0x10(%r15),%ebx
+  c7:	41 8b 57 ec          	mov    -0x14(%r15),%edx
+  cb:	48 63 c3             	movslq %ebx,%rax
+  ce:	0f af da             	imul   %edx,%ebx
+  d1:	0f af d9             	imul   %ecx,%ebx
+  d4:	48 69 c0 00 36 6e 01 	imul   $0x16e3600,%rax,%rax
+  db:	4c 01 e0             	add    %r12,%rax
+  de:	48 63 d2             	movslq %edx,%rdx
+  e1:	48 69 d2 e0 2e 00 00 	imul   $0x2ee0,%rdx,%rdx
+  e8:	48 01 c2             	add    %rax,%rdx
+  eb:	03 1c 8a             	add    (%rdx,%rcx,4),%ebx
+  ee:	89 1c 8a             	mov    %ebx,(%rdx,%rcx,4)
+  f1:	41 8b 47 e8          	mov    -0x18(%r15),%eax
+  f5:	83 c0 01             	add    $0x1,%eax
+  f8:	41 89 47 e8          	mov    %eax,-0x18(%r15)
+  fc:	41 8b 57 e8          	mov    -0x18(%r15),%edx
+ 100:	41 3b 57 dc          	cmp    -0x24(%r15),%edx
+ 104:	7c ba                	jl     c0 <S0_hhvm+0xc0>
+ 106:	e9 65 ff ff ff       	jmp    70 <S0_hhvm+0x70>
+ 10b:	4d 8b 6f f8          	mov    -0x8(%r15),%r13
+ 10f:	49 8b 1f             	mov    (%r15),%rbx
+ 112:	49 83 c7 08          	add    $0x8,%r15
+ 116:	31 c0                	xor    %eax,%eax
+ 118:	41 5c                	pop    %r12
+ 11a:	c3                   	ret    

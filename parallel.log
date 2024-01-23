@@ -1,0 +1,167 @@
+
+func_7f2804040130.elf:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <S0_hhvm>:
+   0:	f3 0f 1e fa          	endbr64 
+   4:	41 54                	push   %r12
+   6:	48 83 ec 40          	sub    $0x40,%rsp
+   a:	4c 89 5c 24 20       	mov    %r11,0x20(%rsp)
+   f:	4c 89 54 24 18       	mov    %r10,0x18(%rsp)
+  14:	4c 89 4c 24 10       	mov    %r9,0x10(%rsp)
+  19:	4c 89 44 24 08       	mov    %r8,0x8(%rsp)
+  1e:	49 89 f4             	mov    %rsi,%r12
+  21:	49 89 fe             	mov    %rdi,%r14
+  24:	4d 89 6f f8          	mov    %r13,-0x8(%r15)
+  28:	41 c7 47 f4 00 00 00 	movl   $0x0,-0xc(%r15)
+  2f:	00 
+  30:	41 c7 47 e4 0a 00 00 	movl   $0xa,-0x1c(%r15)
+  37:	00 
+  38:	41 c7 47 e0 14 00 00 	movl   $0x14,-0x20(%r15)
+  3f:	00 
+  40:	41 c7 47 dc 1e 00 00 	movl   $0x1e,-0x24(%r15)
+  47:	00 
+  48:	31 c0                	xor    %eax,%eax
+  4a:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+  50:	31 c9                	xor    %ecx,%ecx
+  52:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+  59:	00 00 00 
+  5c:	0f 1f 40 00          	nopl   0x0(%rax)
+  60:	48 89 44 24 28       	mov    %rax,0x28(%rsp)
+  65:	48 83 c1 01          	add    $0x1,%rcx
+  69:	48 83 f9 13          	cmp    $0x13,%rcx
+  6d:	7e f1                	jle    60 <S0_hhvm+0x60>
+  6f:	48 83 c0 01          	add    $0x1,%rax
+  73:	48 83 f8 09          	cmp    $0x9,%rax
+  77:	7e d7                	jle    50 <S0_hhvm+0x50>
+  79:	48 8d 3d f0 00 00 00 	lea    0xf0(%rip),%rdi        # 170 <S0_hhvm_polly_subfn>
+  80:	48 89 e6             	mov    %rsp,%rsi
+  83:	41 b8 0a 00 00 00    	mov    $0xa,%r8d
+  89:	41 b9 01 00 00 00    	mov    $0x1,%r9d
+  8f:	31 d2                	xor    %edx,%edx
+  91:	31 c9                	xor    %ecx,%ecx
+  93:	e8 00 00 00 00       	call   98 <S0_hhvm+0x98>
+  98:	48 89 e7             	mov    %rsp,%rdi
+  9b:	e8 d0 00 00 00       	call   170 <S0_hhvm_polly_subfn>
+  a0:	e8 00 00 00 00       	call   a5 <S0_hhvm+0xa5>
+  a5:	31 c0                	xor    %eax,%eax
+  a7:	66 0f 1f 84 00 00 00 	nopw   0x0(%rax,%rax,1)
+  ae:	00 00 
+  b0:	31 c9                	xor    %ecx,%ecx
+  b2:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+  b9:	00 00 00 
+  bc:	0f 1f 40 00          	nopl   0x0(%rax)
+  c0:	31 d2                	xor    %edx,%edx
+  c2:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+  c9:	00 00 00 
+  cc:	0f 1f 40 00          	nopl   0x0(%rax)
+  d0:	48 89 4c 24 30       	mov    %rcx,0x30(%rsp)
+  d5:	48 89 54 24 38       	mov    %rdx,0x38(%rsp)
+  da:	48 83 c2 01          	add    $0x1,%rdx
+  de:	48 83 fa 1d          	cmp    $0x1d,%rdx
+  e2:	7e ec                	jle    d0 <S0_hhvm+0xd0>
+  e4:	48 83 c1 01          	add    $0x1,%rcx
+  e8:	48 83 f9 13          	cmp    $0x13,%rcx
+  ec:	7e d2                	jle    c0 <S0_hhvm+0xc0>
+  ee:	48 83 c0 01          	add    $0x1,%rax
+  f2:	48 83 f8 09          	cmp    $0x9,%rax
+  f6:	7e b8                	jle    b0 <S0_hhvm+0xb0>
+  f8:	48 8b 4c 24 28       	mov    0x28(%rsp),%rcx
+  fd:	48 8b 54 24 30       	mov    0x30(%rsp),%rdx
+ 102:	48 8b 44 24 38       	mov    0x38(%rsp),%rax
+ 107:	48 69 d2 e0 2e 00 00 	imul   $0x2ee0,%rdx,%rdx
+ 10e:	48 69 c9 00 36 6e 01 	imul   $0x16e3600,%rcx,%rcx
+ 115:	48 03 0d 00 00 00 00 	add    0x0(%rip),%rcx        # 11c <S0_hhvm+0x11c>
+ 11c:	48 01 d1             	add    %rdx,%rcx
+ 11f:	8b 14 81             	mov    (%rcx,%rax,4),%edx
+ 122:	48 b8 1e 00 00 00 14 	movabs $0x140000001e,%rax
+ 129:	00 00 00 
+ 12c:	49 89 47 e8          	mov    %rax,-0x18(%r15)
+ 130:	41 c7 47 f0 0a 00 00 	movl   $0xa,-0x10(%r15)
+ 137:	00 
+ 138:	49 8d 47 08          	lea    0x8(%r15),%rax
+ 13c:	4d 8b 6f f8          	mov    -0x8(%r15),%r13
+ 140:	49 8b 1f             	mov    (%r15),%rbx
+ 143:	b9 1d 00 00 00       	mov    $0x1d,%ecx
+ 148:	4c 89 f7             	mov    %r14,%rdi
+ 14b:	4c 89 e6             	mov    %r12,%rsi
+ 14e:	4c 8b 44 24 08       	mov    0x8(%rsp),%r8
+ 153:	4c 8b 4c 24 10       	mov    0x10(%rsp),%r9
+ 158:	4c 8b 54 24 18       	mov    0x18(%rsp),%r10
+ 15d:	4c 8b 5c 24 20       	mov    0x20(%rsp),%r11
+ 162:	49 89 c7             	mov    %rax,%r15
+ 165:	31 c0                	xor    %eax,%eax
+ 167:	48 83 c4 40          	add    $0x40,%rsp
+ 16b:	41 5c                	pop    %r12
+ 16d:	c3                   	ret    
+ 16e:	66 90                	xchg   %ax,%ax
+
+0000000000000170 <S0_hhvm_polly_subfn>:
+ 170:	f3 0f 1e fa          	endbr64 
+ 174:	41 57                	push   %r15
+ 176:	41 56                	push   %r14
+ 178:	53                   	push   %rbx
+ 179:	48 83 ec 10          	sub    $0x10,%rsp
+ 17d:	4c 8d 74 24 08       	lea    0x8(%rsp),%r14
+ 182:	49 89 e7             	mov    %rsp,%r15
+ 185:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+ 18c:	00 00 00 
+ 18f:	90                   	nop
+ 190:	4c 89 f7             	mov    %r14,%rdi
+ 193:	4c 89 fe             	mov    %r15,%rsi
+ 196:	e8 00 00 00 00       	call   19b <S0_hhvm_polly_subfn+0x2b>
+ 19b:	3c 00                	cmp    $0x0,%al
+ 19d:	0f 84 a2 00 00 00    	je     245 <S0_hhvm_polly_subfn+0xd5>
+ 1a3:	4c 8b 5c 24 08       	mov    0x8(%rsp),%r11
+ 1a8:	4c 8b 04 24          	mov    (%rsp),%r8
+ 1ac:	49 83 e8 01          	sub    $0x1,%r8
+ 1b0:	eb 17                	jmp    1c9 <S0_hhvm_polly_subfn+0x59>
+ 1b2:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+ 1b9:	00 00 00 
+ 1bc:	0f 1f 40 00          	nopl   0x0(%rax)
+ 1c0:	49 83 c3 01          	add    $0x1,%r11
+ 1c4:	4d 39 c3             	cmp    %r8,%r11
+ 1c7:	7f c7                	jg     190 <S0_hhvm_polly_subfn+0x20>
+ 1c9:	4d 69 d3 e4 64 6e 01 	imul   $0x16e64e4,%r11,%r10
+ 1d0:	49 69 cb 00 36 6e 01 	imul   $0x16e3600,%r11,%rcx
+ 1d7:	4c 8b 0d 00 00 00 00 	mov    0x0(%rip),%r9        # 1de <S0_hhvm_polly_subfn+0x6e>
+ 1de:	49 01 c9             	add    %rcx,%r9
+ 1e1:	31 ff                	xor    %edi,%edi
+ 1e3:	eb 15                	jmp    1fa <S0_hhvm_polly_subfn+0x8a>
+ 1e5:	66 2e 0f 1f 84 00 00 	cs nopw 0x0(%rax,%rax,1)
+ 1ec:	00 00 00 
+ 1ef:	90                   	nop
+ 1f0:	48 83 c7 01          	add    $0x1,%rdi
+ 1f4:	48 83 ff 13          	cmp    $0x13,%rdi
+ 1f8:	7f c6                	jg     1c0 <S0_hhvm_polly_subfn+0x50>
+ 1fa:	48 69 df e0 2e 00 00 	imul   $0x2ee0,%rdi,%rbx
+ 201:	4c 01 cb             	add    %r9,%rbx
+ 204:	44 89 d8             	mov    %r11d,%eax
+ 207:	0f af c7             	imul   %edi,%eax
+ 20a:	31 f6                	xor    %esi,%esi
+ 20c:	eb 1f                	jmp    22d <S0_hhvm_polly_subfn+0xbd>
+ 20e:	66 90                	xchg   %ax,%ax
+ 210:	48 8d 14 b5 00 00 00 	lea    0x0(,%rsi,4),%rdx
+ 217:	00 
+ 218:	89 c1                	mov    %eax,%ecx
+ 21a:	0f af ce             	imul   %esi,%ecx
+ 21d:	03 0c 13             	add    (%rbx,%rdx,1),%ecx
+ 220:	89 0c 13             	mov    %ecx,(%rbx,%rdx,1)
+ 223:	48 83 c6 01          	add    $0x1,%rsi
+ 227:	48 83 fe 1d          	cmp    $0x1d,%rsi
+ 22b:	7f c3                	jg     1f0 <S0_hhvm_polly_subfn+0x80>
+ 22d:	4c 39 df             	cmp    %r11,%rdi
+ 230:	75 de                	jne    210 <S0_hhvm_polly_subfn+0xa0>
+ 232:	48 83 fe 13          	cmp    $0x13,%rsi
+ 236:	7f d8                	jg     210 <S0_hhvm_polly_subfn+0xa0>
+ 238:	48 8b 0d 00 00 00 00 	mov    0x0(%rip),%rcx        # 23f <S0_hhvm_polly_subfn+0xcf>
+ 23f:	42 89 34 11          	mov    %esi,(%rcx,%r10,1)
+ 243:	eb cb                	jmp    210 <S0_hhvm_polly_subfn+0xa0>
+ 245:	e8 00 00 00 00       	call   24a <S0_hhvm_polly_subfn+0xda>
+ 24a:	48 83 c4 10          	add    $0x10,%rsp
+ 24e:	5b                   	pop    %rbx
+ 24f:	41 5e                	pop    %r14
+ 251:	41 5f                	pop    %r15
+ 253:	c3                   	ret    

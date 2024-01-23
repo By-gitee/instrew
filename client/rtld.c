@@ -375,10 +375,6 @@ rtld_reloc_at(const struct RtldPatchData* patch_data, void* tgt, void* sym) {
             return -EINVAL;
         rtld_blend(tgt, 0xffffffff, syma);
         break;
-    case R_X86_64_GOTPCREL:
-        // TODO:完成该类型的重定位，学习动态链接过程
-        // rtld_blend(tgt, UINT64_MAX, prel_syma);
-        break;
 #elif defined(__aarch64__)
     case R_AARCH64_PREL64:
         rtld_blend(tgt, UINT64_MAX, prel_syma);

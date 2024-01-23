@@ -1,4 +1,5 @@
 
+#include <asm-generic/errno.h>
 #include <common.h>
 #include <asm/signal.h>
 #include <linux/fcntl.h>
@@ -110,23 +111,31 @@ int translator_get(Translator* t, uintptr_t addr, void** out_obj,
     int ret;
     if ((ret = translator_hdr_send(t, MSGID_C_TRANSLATE, 8)) != 0)
         return ret;
+    printf("0\n");
     if ((ret = write_full(t->wr_fd, &addr, sizeof(addr))) != sizeof(addr))
         return ret;
-
+    printf("1\n");
     while (true) {
+      printf("1a\n");
         int32_t sz = translator_hdr_recv(t, MSGID_S_MEMREQ);
         if (sz == -EPROTO) {
+      printf("1b\n");
             return translator_get_object(t, out_obj, out_obj_size);
         } else if (sz < 0) {
+      //sz为什么会是-5......
+          printf("1c %u\n",-sz);
             return sz;
         }
 
+      printf("1d\n");
         // handle memory request
         struct { uint64_t addr; size_t buf_sz; } memrq;
         if (sz != sizeof(memrq))
             return -1;
+    printf("2\n");
         if ((ret = read_full(t->rd_fd, &memrq, sizeof(memrq))) != sizeof(memrq))
             return ret;
+    printf("3\n");
         if (memrq.buf_sz > 0x1000)
             memrq.buf_sz = 0x1000;
 
@@ -134,6 +143,7 @@ int translator_get(Translator* t, uintptr_t addr, void** out_obj,
             return ret;
 
         uint8_t failed = 0;
+    printf("4\n");
         if ((ret = write_full(t->wr_fd, (void*) memrq.addr, memrq.buf_sz)) != (ssize_t) memrq.buf_sz) {
             // Gracefully handle reads from invalid addresses
             if (ret == -EFAULT) {
@@ -148,9 +158,11 @@ int translator_get(Translator* t, uintptr_t addr, void** out_obj,
             }
         }
 
+    printf("5\n");
         if ((ret = write_full(t->wr_fd, &failed, 1)) != 1)
             return ret;
 
+    printf("6\n");
         t->written_bytes += memrq.buf_sz;
     }
 }

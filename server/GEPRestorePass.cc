@@ -90,7 +90,13 @@ void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
 
   //创建全局指针变量
   if(AddrGV.count(RG->baseAddr)==0){
-    GlobalVariable* arrayBase= new GlobalVariable(*(RG->GEP->getParent()->getParent()->getParent()),Type::getInt64Ty(Ctx),false,GlobalVariable::LinkageTypes::ExternalLinkage,RG->baseAddr);
+    //GlobalVariable* arrayBase= new GlobalVariable(*(RG->GEP->getParent()->getParent()->getParent()),Type::getInt64Ty(Ctx),false,GlobalVariable::LinkageTypes::ExternalLinkage,RG->baseAddr);
+
+    GlobalVariable* arrayBase= new GlobalVariable(Type::getInt64Ty(Ctx),false,GlobalVariable::LinkageTypes::ExternalLinkage);
+    llvm::Metadata* lim = llvm::ConstantAsMetadata::get(RG->baseAddr);
+    llvm::MDNode* node = llvm::MDNode::get(Ctx,{lim,lim});
+    arrayBase->setMetadata("absolute_symbol",node);
+
     std::string arrName = "arr" + itostr(AddrGV.size());
     arrayBase->setName(arrName);
     AddrGV[RG->baseAddr] = arrayBase;
