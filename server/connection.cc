@@ -82,6 +82,9 @@ public:
     void SendMsgHdr(Msg::Id id, size_t size) {
         assert(size <= INT32_MAX);
         wr_hdr = Msg::Hdr{ id, static_cast<int32_t>(size) };
+       ///if(size == -5){
+          printf("[test]Hdr:%u %u",id,size);
+        //}
         if (!std::fwrite(&wr_hdr, sizeof(wr_hdr), 1, file_wr))
             assert(false && "unable to write msg hdr");
     }
@@ -185,10 +188,9 @@ public:
 
 private:
     Page* GetPage(size_t page_addr) {
-        const auto& page_it = page_cache.find(page_addr);
+      const auto& page_it = page_cache.find(page_addr);
         if (page_it != page_cache.end())
             return page_it->second.get();
-
         struct { uint64_t addr; size_t buf_sz; } send_buf{page_addr, PG_SIZE};
         conn.SendMsg(Msg::S_MEMREQ, send_buf);
 

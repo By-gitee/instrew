@@ -9,6 +9,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/Host.h>
+#include <stdio.h>
 // LLVM < 13 has TargetRegistry.h in Support/
 #if __has_include(<llvm/MC/TargetRegistry.h>)
 #include <llvm/MC/TargetRegistry.h>

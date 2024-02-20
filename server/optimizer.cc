@@ -161,7 +161,6 @@ void GenerateCode(llvm::Function& fn){
 
 
   fpm.run(fn,fam);
-  fn.print(llvm::outs());
 }
 
 void CommonOptimize(llvm::Function& fn,const InstrewConfig& instrew_cfg){

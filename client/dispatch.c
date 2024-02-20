@@ -54,7 +54,7 @@ GNU_FORCE_EXTERN
 uintptr_t
 resolve_func(struct CpuState* cpu_state, uintptr_t addr,
              struct RtldPatchData* patch_data) {
-    struct State* state = cpu_state->state;
+  struct State* state = cpu_state->state;
 
     if (patch_data)
         addr = patch_data->sym_addr;

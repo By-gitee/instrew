@@ -11,6 +11,7 @@
 #include <llvm/ADT/iterator.h>
 #include <llvm/Analysis/ScalarEvolution.h>
 #include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Constant.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Dominators.h>
@@ -27,7 +28,9 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Value.h>
 #include <llvm/Support/Casting.h>
+#include <llvm/Support/PointerLikeTypeTraits.h>
 #include <llvm/Support/TypeSize.h>
+#include <llvm/Support/raw_ostream.h>
 #include <vector>
 #include <string>
 #include <stack>
@@ -89,10 +92,11 @@ void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
   }
 
   //创建全局指针变量
+  /**
   if(AddrGV.count(RG->baseAddr)==0){
-    //GlobalVariable* arrayBase= new GlobalVariable(*(RG->GEP->getParent()->getParent()->getParent()),Type::getInt64Ty(Ctx),false,GlobalVariable::LinkageTypes::ExternalLinkage,RG->baseAddr);
+ GlobalVariable* arrayBase= new GlobalVariable(*(RG->GEP->getParent()->getParent()->getParent()),Type::getInt64Ty(Ctx),false,GlobalVariable::LinkageTypes::ExternalLinkage,RG->baseAddr);
 
-    GlobalVariable* arrayBase= new GlobalVariable(Type::getInt64Ty(Ctx),false,GlobalVariable::LinkageTypes::ExternalLinkage);
+//    GlobalVariable* arrayBase= new GlobalVariable(Type::getInt64Ty(Ctx),false,GlobalVariable::LinkageTypes::ExternalLinkage);
     llvm::Metadata* lim = llvm::ConstantAsMetadata::get(RG->baseAddr);
     llvm::MDNode* node = llvm::MDNode::get(Ctx,{lim,lim});
     arrayBase->setMetadata("absolute_symbol",node);
@@ -101,8 +105,15 @@ void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
     arrayBase->setName(arrName);
     AddrGV[RG->baseAddr] = arrayBase;
   }
+**/
+  Type* i64 = llvm::Type::getInt64Ty(Ctx);
+  PointerType* ptrTy = PointerType::get(i64,64); 
 
-  //根据指针、索引、类型插入GEP指令
+  Constant* intVal = ConstantInt::get(i64,RG->baseAddr->getZExtValue());
+  Constant* ptr = ConstantExpr::getIntToPtr(intVal,ptrTy);
+  llvm::outs()<<*ptr<<"!!!!!!!!\n";
+  //assert(0);
+  //根据指针、索引、类型插入GEP指令i
   //而且需要replace
   std::vector<Value*> GEPindex;
   GEPindex.push_back(ConstantInt::get(Type::getInt64Ty(Ctx),0));
@@ -112,8 +123,8 @@ void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
   ArrayRef<Value*> idXList(GEPindex);
 
   //创建新的GEP
-  GetElementPtrInst* newGEP = GetElementPtrInst::CreateInBounds(ty,AddrGV[RG->baseAddr],idXList,"",RG->GEP);
-
+//  GetElementPtrInst* newGEP = GetElementPtrInst::CreateInBounds(ty,AddrGV[RG->baseAddr],idXList,"",RG->GEP);
+  GetElementPtrInst* newGEP = GetElementPtrInst::CreateInBounds(ty,ptr,idXList,"",RG->GEP);
   //更换之前GEP所有的Use
   RG->GEP->replaceAllUsesWith(newGEP);
 }

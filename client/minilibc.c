@@ -10,6 +10,7 @@
 //TODO:这个地方实现？
 extern void _init(void) {
   __asm__ volatile(
+                   "endbr64\n\t"
                    "sub $0x8,%rsp\n\t"
                    "mov 0x0(%rip),%rax\n\t"
                    "call *%rax\n\t"
@@ -18,6 +19,7 @@ extern void _init(void) {
   }
 extern void _fini(void){
   __asm__ volatile(
+                   "endbr64\n\t"
                    "sub $0x8,%rsp\n\t"
                   );
 }
@@ -341,8 +343,9 @@ ssize_t read_full(int fd, void* buf, size_t nbytes) {
         ssize_t bytes_read = read(fd, buf_cp + total_read, nbytes - total_read);
         if (bytes_read < 0)
             return bytes_read;
-        if (bytes_read == 0)
+        if (bytes_read == 0){
             return -EIO;
+        }
         total_read += bytes_read;
     }
     return total_read;

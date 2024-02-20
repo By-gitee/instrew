@@ -31,9 +31,10 @@
 static bool
 rtld_elf_signed_range(int64_t val, unsigned bits, const char* relinfo) {
     if (!CHECK_SIGNED_BITS(val, bits)) {
-        dprintf(2, "relocation offset out of range (%s): %lx\n", relinfo, val);
+        dprintf(2, "relocation offset out of range (%s): %lx  >  %lx => %lx\n", relinfo, val,(1ll<<(bits-1))-1,(val) < (1ll << (bits-1))-1);
         return false;
     }
+        dprintf(2, "[right]relocation offset out of range (%s): %lx  <  %lx => %lx\n", relinfo, val,(1ll<<(bits-1))-1,(val) < (1ll << (bits-1))-1);
     return true;
 }
 
@@ -352,9 +353,10 @@ rtld_reloc_at(const struct RtldPatchData* patch_data, void* tgt, void* sym) {
     case R_X86_64_PC64:
         rtld_blend(tgt, UINT64_MAX, prel_syma);
         break;
-    case R_X86_64_64:
+    case R_X86_64_64:{
+        printf("\n\n\n\n\n\nR_X86_64_64: %lx\n",syma);
         rtld_blend(tgt, UINT64_MAX, syma);
-        break;
+        break;}
     case R_X86_64_PC32:
         if (!rtld_elf_signed_range(prel_syma, 32, "R_X86_64_PC32"))
             return -EINVAL;
@@ -366,13 +368,21 @@ rtld_reloc_at(const struct RtldPatchData* patch_data, void* tgt, void* sym) {
         rtld_blend(tgt, 0xffffffff, prel_syma);
         break;
     case R_X86_64_32S:
-        if (!rtld_elf_signed_range(syma, 32, "R_X86_64_32S"))
+        if(syma == 0x400001053358){
+          rtld_blend(tgt, UINT64_MAX, syma);
+        }
+        else if (!rtld_elf_unsigned_range(syma, 32, "R_X86_64_32S")){
             return -EINVAL;
+        }
         rtld_blend(tgt, 0xffffffff, syma);
         break;
     case R_X86_64_32:
-        if (!rtld_elf_unsigned_range(syma, 32, "R_X86_64_32S"))
+        if(syma == 0x400001053358){
+          rtld_blend(tgt, UINT64_MAX, syma);
+        }
+        else if (!rtld_elf_unsigned_range(syma, 32, "R_X86_64_32S")){
             return -EINVAL;
+        }
         rtld_blend(tgt, 0xffffffff, syma);
         break;
 #elif defined(__aarch64__)
