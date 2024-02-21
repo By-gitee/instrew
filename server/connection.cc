@@ -82,9 +82,6 @@ public:
     void SendMsgHdr(Msg::Id id, size_t size) {
         assert(size <= INT32_MAX);
         wr_hdr = Msg::Hdr{ id, static_cast<int32_t>(size) };
-       ///if(size == -5){
-          printf("[test]Hdr:%u %u",id,size);
-        //}
         if (!std::fwrite(&wr_hdr, sizeof(wr_hdr), 1, file_wr))
             assert(false && "unable to write msg hdr");
     }

@@ -468,9 +468,7 @@ public:
         // Non-PIC: store address, predecode only stores offsets to start addr.
         uint64_t hash_addr = instrew_cfg.pic ? 0 : addr;
         SHA1_Update(&sha, &hash_addr, sizeof hash_addr);
-        printf("[START]\n");
         Predecode(addr, &sha, insts);
-        printf("[PREDECODE END]\n");
         uint8_t hash[SHA_DIGEST_LENGTH];
         SHA1_Final(hash, &sha);
 
@@ -482,7 +480,6 @@ public:
 
         auto time_lifting_start = std::chrono::steady_clock::now();
         llvm::Function* fn = Lift(addr, insts);
-        printf("[Lift END]\n");
         if (!fn) {
             iw_sendobj(iwc, addr, nullptr, 0, nullptr);
             return;
@@ -511,18 +508,17 @@ public:
         }
         if (instrew_cfg.dumpir & 4)
             mod->print(llvm::errs(), nullptr);
-        printf("[OPTIMIZE END]\n");
+       /** 
         if(isKernelFunc){
             mod->print(llvm::errs(), nullptr);
         }
+        **/
         auto time_llvm_codegen_start = std::chrono::steady_clock::now();
         codegen.GenerateCode(mod.get());
         if (instrew_cfg.dumpir & 8)
             mod->print(llvm::errs(), nullptr);
 
-        printf("[TRANSLATE END]\n");
         iw_sendobj(iwc, addr, obj_buffer.data(), obj_buffer.size(), hash);
-        printf("[SENDOBJ]\n");
         // Remove unused functions and dead prototypes. Having many prototypes
         // causes some compile-time overhead.
         for (auto& glob_fn : llvm::make_early_inc_range(*mod))

@@ -105,7 +105,10 @@ void PollyOptimize(llvm::Function& fn){
   fpm.addPass(llvm::GEPRestorePass());
 
   fpm.run(fn,fam);
-GenerateCode(fn);
+
+fn.print(llvm::outs());
+  GenerateCode(fn);
+//fn.print(llvm::outs());
 llvm::outs()<<"opt finish\n";
 }
 

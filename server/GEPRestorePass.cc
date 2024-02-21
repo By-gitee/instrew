@@ -111,7 +111,6 @@ void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
 
   Constant* intVal = ConstantInt::get(i64,RG->baseAddr->getZExtValue());
   Constant* ptr = ConstantExpr::getIntToPtr(intVal,ptrTy);
-  llvm::outs()<<*ptr<<"!!!!!!!!\n";
   //assert(0);
   //根据指针、索引、类型插入GEP指令i
   //而且需要replace
@@ -135,14 +134,20 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
 
   //先写入最低维度索引值，不过实际上这里可以不是zext，而是一个固定的值
   //因为常常有计算向某个特定位置写入值 FIXME
-  ZExtInst* zext = dyn_cast<ZExtInst>(RG->GEP->getOperand(1));
-  assert(zext!=nullptr && "Not ZExt");
+  Value* Index = nullptr;
+  if(ZExtInst* zext = dyn_cast<ZExtInst>(RG->GEP->getOperand(1))){
+    Index = zext;
+    PHINode* phi = dyn_cast<PHINode>(zext->getOperand(0));
+    assert(phi!=nullptr && "Not Phi");
+    RG->index.push_back(zext);
+  }
+  else if( ConstantInt* constantIndex = dyn_cast<ConstantInt>(RG->GEP->getOperand(1))){
+    Index = constantIndex;
+    RG->index.push_back(constantIndex);
+  }
+  assert(Index!=nullptr && "Not ZExt");
 
-  PHINode* phi = dyn_cast<PHINode>(zext->getOperand(0));
-  assert(phi!=nullptr && "Not Phi");
-
-  RG->index.push_back(zext);
-
+ 
   while(1){
     Value* I = values.front();
     values.pop();
@@ -159,6 +164,21 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
       }
       bool isBase = (b->getOpcode()==BinaryOperator::Add)?true:false;
 
+      values.push(b->getOperand(0));
+
+      if(ConstantInt* cst = dyn_cast<ConstantInt>(b->getOperand(1))){
+        if(isBase){
+          RG->baseAddr = cst;
+        }
+        else{
+          RG->dimSize.push_back(cst->getZExtValue());
+        }
+      }
+      else{
+        values.push(b->getOperand(1));
+      }
+      EraseInsts.insert(b);
+      /**
       for(int i=0;i<b->getNumOperands();i++){
         if(ConstantInt* cst = dyn_cast<ConstantInt>(b->getOperand(i))){
           //存储值？貌似直接存储ConstantInt就行，修改baseAddr类型
@@ -173,6 +193,7 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
         }
         EraseInsts.insert(b);
       }
+      **/
       continue;
     }
     else if(ZExtInst* zt = dyn_cast<ZExtInst>(I)){
