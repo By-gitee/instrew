@@ -453,7 +453,7 @@ public:
     void Translate(uintptr_t addr) {
         // [By add]
         bool isKernelFunc = false;
-        if(addr-preAddr == 0xAAF30130 - 0xA9BCDD44){
+        if(addr-preAddr == 0x401350 - 0x401223){
         printf("addr:%p\n",addr);
           isKernelFunc = true;
         }
@@ -468,6 +468,8 @@ public:
         // Non-PIC: store address, predecode only stores offsets to start addr.
         uint64_t hash_addr = instrew_cfg.pic ? 0 : addr;
         SHA1_Update(&sha, &hash_addr, sizeof hash_addr);
+
+//        printf("[START]\n");
         Predecode(addr, &sha, insts);
         uint8_t hash[SHA_DIGEST_LENGTH];
         SHA1_Final(hash, &sha);
@@ -477,7 +479,7 @@ public:
                 dur_predecode += std::chrono::steady_clock::now() - time_predecode_start;
             return;
         }
-
+  //      printf("[PREDECODE END]\n");   
         auto time_lifting_start = std::chrono::steady_clock::now();
         llvm::Function* fn = Lift(addr, insts);
         if (!fn) {
@@ -486,6 +488,7 @@ public:
         }
         if (instrew_cfg.dumpir & 1)
             mod->print(llvm::errs(), nullptr);
+    //    printf("[LIFT END]\n");   
         /**
         if(isKernelFunc){
           mod->print(llvm::errs(),nullptr);
@@ -496,6 +499,7 @@ public:
         fn = ChangeCallConv(fn, instrew_cc);
         if (instrew_cfg.dumpir & 2)
             mod->print(llvm::errs(), nullptr);
+      //  printf("[CALLCONV END]\n");   
         //if(isKernelFunc){
         //  mod->print(llvm::errs(),nullptr);
         //}
@@ -503,22 +507,27 @@ public:
         auto time_llvm_opt_start = std::chrono::steady_clock::now();
    
         if(isKernelFunc){
+          printf("[polly STRAT]\n");
         optimizer.Optimize(*fn);
+        printf("[polly END]\n");   
         //mod->print(llvm::errs(),nullptr);
         }
+      //  printf("[OPTIMIZE END]\n");   
         if (instrew_cfg.dumpir & 4)
             mod->print(llvm::errs(), nullptr);
-       /** 
+       
         if(isKernelFunc){
             mod->print(llvm::errs(), nullptr);
         }
-        **/
+       
         auto time_llvm_codegen_start = std::chrono::steady_clock::now();
         codegen.GenerateCode(mod.get());
+      //  printf("[GEN CODE END]\n");   
         if (instrew_cfg.dumpir & 8)
             mod->print(llvm::errs(), nullptr);
 
         iw_sendobj(iwc, addr, obj_buffer.data(), obj_buffer.size(), hash);
+      //  printf("[TRANSLATE END]\n");   
         // Remove unused functions and dead prototypes. Having many prototypes
         // causes some compile-time overhead.
         for (auto& glob_fn : llvm::make_early_inc_range(*mod))

@@ -70,7 +70,6 @@ struct GEPInfo{
     // the same basic block.
     for (User *U : GEP->users()) {
       Instruction *User = cast<Instruction>(U);
-
       if (StoreInst *SI = dyn_cast<StoreInst>(User)) {
         // Remember the basic blocks which define new values for the alloca
         GEPStoreType[GEP] = SI->getValueOperand()->getType();
@@ -544,6 +543,7 @@ void GEPaddAssumeNonNull(AssumptionCache *AC, LoadInst *LI){
 bool GEPrewriteSingleStore(GetElementPtrInst *GEP, GEPInfo &Info,
                            LargeBlockInfo &LBI, const DataLayout &DL,
                            DominatorTree &DT, AssumptionCache *AC) {
+  llvm::outs()<<*GEP<<"start\n";
   StoreInst *OnlyStore = Info.OnlyStore;
   bool StoringGlobalVal = !isa<Instruction>(OnlyStore->getOperand(0));
   BasicBlock *StoreBB = OnlyStore->getParent();
@@ -591,6 +591,7 @@ bool GEPrewriteSingleStore(GetElementPtrInst *GEP, GEPInfo &Info,
     LBI.deleteValue(LI);
   }
 
+  llvm::outs()<<*GEP<<"end\n";
   // Finally, after the scan, check to see if the store is all that is left.
   if (!Info.UsingBlocks.empty()){
     return false; // If not, we'll have to fall back for the remainder.
@@ -606,6 +607,7 @@ bool GEPrewriteSingleStore(GetElementPtrInst *GEP, GEPInfo &Info,
 }
 
 PreservedAnalyses GEPPromotePass::run(Function &F,FunctionAnalysisManager &AM){
+  llvm::outs()<<"[PROMOTE]-start\n";
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
   auto &AC = AM.getResult<AssumptionAnalysis>(F);
   auto &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
@@ -613,6 +615,8 @@ PreservedAnalyses GEPPromotePass::run(Function &F,FunctionAnalysisManager &AM){
     return PreservedAnalyses::none();
   }
 
+  
+  llvm::outs()<<"[PROMOTE]-end\n";
   return PreservedAnalyses::none();
 }
 
@@ -623,6 +627,7 @@ void GEPpromoteMem2Reg::run(){
   LargeBlockInfo LBI;
   ForwardIDFCalculator IDF(DT);
 
+  llvm::outs()<<"GEPpromoteMem2Reg:start\n";
   for(unsigned GEPNum = 0; GEPNum != GEPs.size(); ++GEPNum){
     GetElementPtrInst * GEP = GEPs[GEPNum];
 
@@ -653,6 +658,8 @@ void GEPpromoteMem2Reg::run(){
         continue;
       }
     }
+
+    /**
     // No.2
     if(Info.OnlyUsedInOneBlock &&
        GEPpromoteSingleBlock(GEP,Info,LBI,SQ.DL,DT,AC)){
@@ -708,8 +715,17 @@ void GEPpromoteMem2Reg::run(){
   // the alloca's.  We do this in case there is a load of a value that has not
   // been stored yet.  In this case, it will get this null value.
   RenamePassData::ValVector Values(GEPs.size());
-  for (unsigned i = 0, e = GEPs.size(); i != e; ++i)
+  for (unsigned i = 0, e = GEPs.size(); i != e; ++i){
+    llvm::outs()<<*GEPs[i]<<"\n";
+    if(GEPStoreType[GEPs[i]]==nullptr){
+      llvm::outs()<<"nullptr error\n";
+    } 
+    for(const User *U : GEPs[i]->users()){
+      llvm::outs()<<*U<<"\n";
+    }
+
     Values[i] = UndefValue::get(GEPStoreType[GEPs[i]]);
+  }
 
   // When handling debug info, treat all incoming values as if they have unknown
   // locations until proven otherwise.
@@ -742,6 +758,7 @@ void GEPpromoteMem2Reg::run(){
     //++NumPromoteGEP;
   }
 
+  llvm::outs()<<"GEPpromoteMem2Reg:temp\n";
 
   //TODO
   // Loop over all of the PHI nodes and see if there are any that we can get
@@ -832,9 +849,10 @@ void GEPpromoteMem2Reg::run(){
       for (BasicBlock *Pred : Preds)
         SomePHI->addIncoming(UndefVal, Pred);
     }
+**/
   }
 
-
+  llvm::outs()<<"over\n";
   NewPhiNodes.clear();
 }
 
@@ -874,17 +892,22 @@ bool GEPpromoteMemToRegister(Function &F, DominatorTree &DT, AssumptionCache &AC
         }
       }
       //llvm::outs()<<" NumPromoteGEP:"<<NumPromoteGEP<<" GEPs.size():"<<GEPs.size()<<"\n";
-      if(NumPromoteGEP == GEPs.size())  {
+      if(NumPromoteGEP+1 == GEPs.size())  {
         //目前仅仅实现了SingleStore情况
         //所以 + 1临时用于debug
         //后期需要删除
+        //临时debug用：
         //llvm::outs()<<"can brea\n";
         break;
       }
+      else if(GEPs.size()==0){//这块临时debug用
+        break;
+      }
       NumPromoteGEP = 0;
-      //llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
+      llvm::outs()<<"GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
       GEPpromoteMemToReg(GEPs,DT,&AC);
-      // llvm::outs()<<NumPromoteGEP<<"\n";
+      llvm::outs()<<NumPromoteGEP<<"\n";
+      llvm::outs()<<"2GEPs size:"<<GEPs.size()<<"\n";//临时加的，后面记得删掉
       //    break;//临时加的，后面记得删掉
       //忽略NumPromoted
       Changed = true;
@@ -904,11 +927,12 @@ bool isGEPPromotable(const GetElementPtrInst *GEP){
   //这里又是一个与alloc的区别之处
   //alloc的store删除只要保证函数功能正常执行，是没有语义上的错误的
   //但是GEP不同，需要识别出来不同的语义才能够确保优化正确
-
+// 只有Load的情况怎么办呢？
   // 这里由于我们限制了GEP的使用场景
   // （仅仅适用于模拟堆栈操作的部分）
   // 所以这里对于load和store类型的判断暂且删除
   // (GEP从栈中拿出来都是i8，存的时候都用i32，但是不影响代码的正确性)
+  bool hasStore = false;
   for(const User *U : GEP->users()){    
     if (const LoadInst *LI = dyn_cast<LoadInst>(U)) {
       if (LI->isVolatile())
@@ -918,6 +942,7 @@ bool isGEPPromotable(const GetElementPtrInst *GEP){
         return false; 
       if (SI->isVolatile())
         return false;
+      hasStore = true;
     } else if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(U)) {
       if (!II->isLifetimeStartOrEnd() && !II->isDroppable())
         return false;
@@ -936,7 +961,7 @@ bool isGEPPromotable(const GetElementPtrInst *GEP){
       return false;
     }
   }
-  return true;
+  return hasStore;
 }
 
 

@@ -79,6 +79,7 @@ void PollyOptimize(llvm::Function& fn){
   fpm.addPass(llvm::GVNPass());
   fpm.addPass(llvm::EarlyCSEPass(true));
   fpm.addPass(llvm::GEPPromotePass());
+ /** 
   fpm.addPass(llvm::EarlyCSEPass(true));
   fpm.addPass(llvm::InstCombinePass());
   
@@ -102,13 +103,13 @@ void PollyOptimize(llvm::Function& fn){
   }
 
   fpm.addPass(llvm::InstCombinePass());
-  fpm.addPass(llvm::GEPRestorePass());
+**/
+  //  fpm.addPass(llvm::GEPRestorePass());
 
   fpm.run(fn,fam);
 
-fn.print(llvm::outs());
-  GenerateCode(fn);
-//fn.print(llvm::outs());
+  fn.print(llvm::outs());
+ // GenerateCode(fn);
 llvm::outs()<<"opt finish\n";
 }
 

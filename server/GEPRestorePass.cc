@@ -235,7 +235,9 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
     //貌似根据同的变量，会判断得到不同的范围
     //一个初步的想法：如果是相同地址，直接取各个phi节点最大范围的最大值
     const SCEV* scev = SE.getSCEV(RG->index.back());
+    printf("restore1\n");
     RG->dimSize.push_back(SE.getUnsignedRangeMax(scev).getZExtValue()+1);
+    printf("restore2\n");
   }
   else{
     //FIXME:实现其他元素类型
@@ -252,6 +254,10 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
   while(I!=E){
     Instruction* inst = &(*I);
     if(GetElementPtrInst* i = dyn_cast<GetElementPtrInst>(inst)){
+      if(I->getPrevNode()==nullptr){
+        I++;
+        continue;
+      }
       if(IntToPtrInst* pi = dyn_cast<IntToPtrInst>(I->getPrevNode())){
         if(dyn_cast<BinaryOperator>(pi->getOperand(0))){
           RestoreGEP* newRestoreGEP= new RestoreGEP(i,pi,i->getResultElementType());
@@ -267,7 +273,6 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
     }
     I++;
   }
-
   for(auto item: RestoreGEPs){
     GetElementPtrInst* GEP = item->GEP;
     IntToPtrInst* ITP = item->ComputeITP;
