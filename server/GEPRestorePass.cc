@@ -31,6 +31,7 @@
 #include <llvm/Support/PointerLikeTypeTraits.h>
 #include <llvm/Support/TypeSize.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/Utils/LoopUtils.h>
 #include <vector>
 #include <string>
 #include <stack>
@@ -39,7 +40,7 @@ using namespace llvm;
 struct RestoreGEP{
   GetElementPtrInst* GEP = nullptr;  //相关的GEP指令
   IntToPtrInst* ComputeITP= nullptr; //相关inttoptr指令
-  ConstantInt* baseAddr = nullptr;   //数组基地址
+  Value* baseAddr = nullptr;   //数组基地址
   Type* elementType = nullptr;       //元素类型
   std::vector<unsigned> dimSize;     //获取到的维度大小
   std::vector<Value*> index;         //数组各维度索引，目前实际值均为PHINode*，但是也有可能是常数 FIXME
@@ -55,7 +56,19 @@ BasicBlock* RestoreExitBlock;
 
 void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE);
 void insertNewGEP(RestoreGEP *RG, LLVMContext &Ctx);
+bool isArg(Function* F,Value* v);
 
+bool isArg(Function* F,Value* v){
+  Function::arg_iterator i = F->arg_begin();
+  Function::arg_iterator e = F->arg_end();
+  while(i!=e){
+    if(i == v){
+      return true;
+    }
+    i++;
+  }
+  return false;
+}
 void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
   //构建GEP数组类型
   //目前仅实现整数数组
@@ -106,11 +119,16 @@ void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
     AddrGV[RG->baseAddr] = arrayBase;
   }
 **/
+  Value* ptr = nullptr;
   Type* i64 = llvm::Type::getInt64Ty(Ctx);
   PointerType* ptrTy = PointerType::get(i64,64); 
-
-  Constant* intVal = ConstantInt::get(i64,RG->baseAddr->getZExtValue());
-  Constant* ptr = ConstantExpr::getIntToPtr(intVal,ptrTy);
+  if(ConstantInt* cst = dyn_cast<ConstantInt>(RG->baseAddr)){
+  Constant* intVal = ConstantInt::get(i64,cst->getZExtValue());
+  ptr = ConstantExpr::getIntToPtr(intVal,ptrTy);
+  }
+  else{
+    ptr = ConstantExpr::getIntToPtr((ConstantInt*)RG->baseAddr,ptrTy);
+  }
   //assert(0);
   //根据指针、索引、类型插入GEP指令i
   //而且需要replace
@@ -122,6 +140,7 @@ void insertNewGEP(RestoreGEP *RG,LLVMContext &Ctx){
   ArrayRef<Value*> idXList(GEPindex);
 
   //创建新的GEP
+  llvm::outs()<<*ptr<<"\n";
 //  GetElementPtrInst* newGEP = GetElementPtrInst::CreateInBounds(ty,AddrGV[RG->baseAddr],idXList,"",RG->GEP);
   GetElementPtrInst* newGEP = GetElementPtrInst::CreateInBounds(ty,ptr,idXList,"",RG->GEP);
   //更换之前GEP所有的Use
@@ -135,11 +154,19 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
   //先写入最低维度索引值，不过实际上这里可以不是zext，而是一个固定的值
   //因为常常有计算向某个特定位置写入值 FIXME
   Value* Index = nullptr;
+  llvm::outs()<<"analyze"<<*RG->GEP<<"\n";
+  llvm::outs()<<"analyze"<<*RG->GEP->getOperand(1)<<"\n";
   if(ZExtInst* zext = dyn_cast<ZExtInst>(RG->GEP->getOperand(1))){
     Index = zext;
     PHINode* phi = dyn_cast<PHINode>(zext->getOperand(0));
     assert(phi!=nullptr && "Not Phi");
     RG->index.push_back(zext);
+  }
+  else if(SExtInst* sext = dyn_cast<SExtInst>(RG->GEP->getOperand(1))){
+    Index = sext;
+    PHINode* phi = dyn_cast<PHINode>(sext->getOperand(0));
+    //assert(phi!=nullptr && "Not Phi");
+    RG->index.push_back(sext);
   }
   else if( ConstantInt* constantIndex = dyn_cast<ConstantInt>(RG->GEP->getOperand(1))){
     Index = constantIndex;
@@ -151,7 +178,7 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
   while(1){
     Value* I = values.front();
     values.pop();
-
+    llvm::outs()<<"[]"<<*I<<"\n";
     if(IntToPtrInst* i2p = dyn_cast<IntToPtrInst>(I)){
       values.push(i2p->getOperand(0));
       continue;
@@ -173,6 +200,9 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
         else{
           RG->dimSize.push_back(cst->getZExtValue());
         }
+      }
+      else if(isArg(b->getParent()->getParent(),b->getOperand(1))&&isBase){
+        RG->baseAddr = b->getOperand(1);
       }
       else{
         values.push(b->getOperand(1));
@@ -205,13 +235,19 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
       }
       RG->index.push_back(zt);
     }
+    else if(SExtInst* st = dyn_cast<SExtInst>(I)){
+      RG->index.push_back(st);
+      if(values.empty()){
+        break;
+      }
+    }
     else{
       //只可能出现以上三种情况，如果出现其他情况，需要更新代码，或者说程序出现了错误
-      assert("Wrong Expr\n");
+      assert(0 && "Wrong Expr\n");
     }
   }
 
-
+  llvm::outs()<<*RG->GEP<<"\n";
   //根据获取到的信息分析索引值
   assert(RG->baseAddr!=nullptr && "baseAddr Analysis failed\n");
   assert(!RG->dimSize.empty() && "index Analysis failed\n");
@@ -235,15 +271,15 @@ void analyzeAddrIndex(RestoreGEP *RG, ScalarEvolution &SE){
     //貌似根据同的变量，会判断得到不同的范围
     //一个初步的想法：如果是相同地址，直接取各个phi节点最大范围的最大值
     const SCEV* scev = SE.getSCEV(RG->index.back());
-    printf("restore1\n");
+//    printf("restore1\n");
     RG->dimSize.push_back(SE.getUnsignedRangeMax(scev).getZExtValue()+1);
-    printf("restore2\n");
+  //  printf("restore2\n");
   }
   else{
     //FIXME:实现其他元素类型
     assert("Unsupported Element Type\n");
   }
-
+  llvm::outs()<<"END\n";
 }
 
 
@@ -300,7 +336,9 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
 
   // 删除原有冗余的指令
   for(auto &inst:EraseInsts){
+    if(inst->use_empty()){
     inst->eraseFromParent();
+  }
   }
   for(auto item: RestoreGEPs){
     delete item;
@@ -315,7 +353,7 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
     }
     I++;
   }
-
+/**
   // 恢复非参数最终的返回指令
   for(InsertValueInst* iv : InsertValInsts){
     llvm::outs()<<"=="<<*iv->getOperand(1)<<"\n";
@@ -336,7 +374,6 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
       }
       
       if(Stores.count(inst)!=0){//说明有store操作，找到了存储的地方
-        llvm::outs()<<"new load ptr:"<<*Stores[inst]<<"\n";
         if(GetElementPtrInst* gep2inst = dyn_cast<GetElementPtrInst>(Stores[inst])){
           std::vector<Value*> GEPindex;
           for(int x=1;x<gep2inst->getNumOperands();x++){
@@ -350,7 +387,6 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
           if(vt){
             GetElementPtrInst* newGEP = GetElementPtrInst::CreateInBounds(vt,gep2inst->getOperand(0),IdXList,"",&RestoreExitBlock->front());
             LoadInst* load = new LoadInst(inst->getType(),newGEP,"",newGEP->getNextNode());
-            llvm::outs()<<"old:"<<*oldValue<<"\n";
       for(Instruction& I :*RestoreExitBlock){
         I.replaceUsesOfWith(oldValue,load);
       }
@@ -369,7 +405,7 @@ PreservedAnalyses GEPRestorePass::run(Function &F, FunctionAnalysisManager &AM){
     }
     
   }
-
+**/
   PreservedAnalyses PA = PreservedAnalyses::none();
   return PA;
 }

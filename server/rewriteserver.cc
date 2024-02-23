@@ -453,6 +453,7 @@ public:
     void Translate(uintptr_t addr) {
         // [By add]
         bool isKernelFunc = false;
+        //if(addr-preAddr == 0xAAF30130 - 0xA9BCDD44 ){
         if(addr-preAddr == 0x401350 - 0x401223){
         printf("addr:%p\n",addr);
           isKernelFunc = true;
